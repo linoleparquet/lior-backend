@@ -2,7 +2,6 @@ package fr.lino.layani.lior.service;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,53 +22,42 @@ public class DoctorServiceImpl implements DoctorService {
 
 	@Override
 	public List<Doctor> getAllDoctor() {
-		repo.findAll().forEach(doctor -> updateLastVisitNextVisitField(doctor.getId()));
+		repo.findAll().forEach(doctor -> updateNextVisit(doctor));
 		return repo.findAll();
 	}
 
 	@Override
 	public Doctor postCreateNewDoctor(Doctor doctor) {
+		updateNextVisit(doctor);
 		return repo.save(doctor);
 	}
 
 	@Override
 	public Doctor getOneDoctor(int id) {
-		updateLastVisitNextVisitField(id);
-		return repo.findById(id).orElseThrow(() -> new DoctorNotFoundException(id));
+		Doctor doctor = repo.findById(id).orElseThrow(() -> new DoctorNotFoundException(id));
+		updateNextVisit(doctor);
+		return doctor;
 	}
 
 	@Override
 	public Doctor putUpdateOneDoctor(Doctor doctor, int id) {
 		doctor.setId(id);
+		updateNextVisit(doctor);
 		return repo.save(doctor);
 	}
 
 	@Override
 	public void deleteOneDoctor(int id) {
-		getVisitByDotor(id).forEach(v -> visitService.deleteOneVisit(v.getId()));
 		repo.deleteById(id);
 	}
 
 	@Override
-	public void updateLastVisitNextVisitField(int id) {
-		Doctor doctor = repo.findById(id).orElseThrow(() -> new DoctorNotFoundException(id));
+	public void updateNextVisit(Doctor doctor) {
 
-		Visit lastVisit = visitService.getAllVisit().stream().filter(v -> v.getDoctorId() == doctor.getId()).sorted()
-				.findFirst().orElse(null);
-
-		if (lastVisit != null) {
-			LocalDate nextVisitDate = lastVisit.getDate().plusMonths(doctor.getPeriodicity());
-			doctor.setLastVisitId(lastVisit.getId());
-			doctor.setNextVisitDate(nextVisitDate);
+		if (doctor.getVisits() != null) {
+			Visit lastVisit = doctor.getVisits().stream().sorted().findFirst().orElseThrow();
+			LocalDate nextVisit = lastVisit.getDate().plusMonths(doctor.getPeriodicity());
+			doctor.setNextVisit(nextVisit);
 		}
-
-		putUpdateOneDoctor(doctor, doctor.getId());
 	}
-
-	@Override
-	public List<Visit> getVisitByDotor(int id) {
-		return visitService.getAllVisit().stream().filter(v -> v.getDoctorId() == id).sorted()
-				.collect(Collectors.toList());
-	}
-
 }

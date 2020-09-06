@@ -32,7 +32,6 @@ public class DoctorController {
 	@GetMapping("/{id}")
 	public Doctor getOneDoctor(@PathVariable int id) {
 		return doctorService.getOneDoctor(id);
-
 	}
 
 	@PostMapping
