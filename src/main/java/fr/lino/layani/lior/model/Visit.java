@@ -32,7 +32,7 @@ public class Visit implements Comparable<Visit>, Serializable {
 	private Doctor doctor;
 	private LocalDate date;
 	@Column(length = 4000)
-	private String note;
+	private String notes;
 
 	@Override
 	public int compareTo(Visit o) {
