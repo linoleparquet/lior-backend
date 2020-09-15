@@ -2,17 +2,22 @@ package fr.lino.layani.lior.service;
 
 import java.util.List;
 
+import fr.lino.layani.lior.dto.VisitDto;
 import fr.lino.layani.lior.model.Visit;
 
 public interface VisitService {
-	List<Visit> getAllVisit();
+	List<VisitDto> getAllVisit();
 
-	Visit postCreateNewVisit(Visit visit);
+	VisitDto postCreateOneVisit(VisitDto visit);
 
-	Visit getOneVisit(int id);
+	VisitDto getOneVisit(int id);
 
-	Visit putUpdateOneVisit(Visit visit, int id);
+	void putUpdateOneVisit(VisitDto visit);
 
 	void deleteOneVisit(int id);
+
+	VisitDto toDto(Visit visit);
+
+	Visit toEntity(VisitDto visitDto);
 
 }

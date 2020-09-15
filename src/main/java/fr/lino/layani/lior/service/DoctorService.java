@@ -2,19 +2,24 @@ package fr.lino.layani.lior.service;
 
 import java.util.List;
 
+import fr.lino.layani.lior.dto.DoctorDto;
 import fr.lino.layani.lior.model.Doctor;
 
 public interface DoctorService {
-	List<Doctor> getAllDoctor();
+	List<DoctorDto> getAllDoctor();
 
-	Doctor postCreateNewDoctor(Doctor doctor);
+	DoctorDto postCreateOneDoctor(DoctorDto doctorDto);
 
-	Doctor getOneDoctor(int id);
+	DoctorDto getOneDoctor(int id);
 
-	Doctor putUpdateOneDoctor(Doctor doctor, int id);
+	void putUpdateOneDoctor(DoctorDto doctorDto);
 
 	void deleteOneDoctor(int id);
 
-	void updateNextVisit(Doctor doctor);
+	void updateNextVisit(DoctorDto doctorDto);
+
+	DoctorDto toDto(Doctor doctor);
+
+	Doctor toEntity(DoctorDto doctorDto);
 
 }

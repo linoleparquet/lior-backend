@@ -1,11 +1,15 @@
 package fr.lino.layani.lior.service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import fr.lino.layani.lior.dto.DoctorDto;
+import fr.lino.layani.lior.dto.VisitDto;
 import fr.lino.layani.lior.exception.VisitNotFoundException;
+import fr.lino.layani.lior.model.Doctor;
 import fr.lino.layani.lior.model.Visit;
 import fr.lino.layani.lior.repository.VisitRepository;
 
@@ -13,34 +17,67 @@ import fr.lino.layani.lior.repository.VisitRepository;
 public class VisitServiceImpl implements VisitService {
 
 	@Autowired
-	VisitRepository repo;
+	VisitRepository visitRepository;
 
 	@Autowired
 	DoctorService doctorService;
 
 	@Override
-	public List<Visit> getAllVisit() {
-		return repo.findAll();
+	public List<VisitDto> getAllVisit() {
+		return visitRepository.findAll().stream().map(this::toDto).collect(Collectors.toList());
 	}
 
 	@Override
-	public Visit getOneVisit(int id) {
-		return repo.findById(id).orElseThrow(() -> new VisitNotFoundException(id));
+	public VisitDto getOneVisit(int id) {
+		return visitRepository.findById(id).map(this::toDto).orElseThrow(() -> new VisitNotFoundException(id));
 	}
 
 	@Override
-	public Visit postCreateNewVisit(Visit visit) {
-		return repo.save(visit);
+	public VisitDto postCreateOneVisit(VisitDto visitDto) {
+		Visit visit = toEntity(visitDto);
+		Visit visitCreated = visitRepository.save(visit);
+		DoctorDto doctorDto = doctorService.getOneDoctor(visitDto.getDoctorId());
+		doctorService.updateNextVisit(doctorDto);
+		return toDto(visitCreated);
+
 	}
 
 	@Override
-	public Visit putUpdateOneVisit(Visit updatedVisit, int id) {
-		return repo.save(updatedVisit);
+	public void putUpdateOneVisit(VisitDto visitDto) {
+		Visit visit = toEntity(visitDto);
+		visitRepository.save(visit);
+		DoctorDto doctorDto = doctorService.getOneDoctor(visitDto.getDoctorId());
+		doctorService.updateNextVisit(doctorDto);
 	}
 
 	@Override
 	public void deleteOneVisit(int id) {
-		repo.deleteById(id);
+		VisitDto visitDto = getOneVisit(id);
+		visitRepository.deleteById(id);
+		DoctorDto doctorDto = doctorService.getOneDoctor(visitDto.getDoctorId());
+		doctorService.updateNextVisit(doctorDto);
+	}
+
+	@Override
+	public VisitDto toDto(Visit visit) {
+		VisitDto visitDto = new VisitDto();
+		visitDto.setId(visit.getId());
+		visitDto.setDate(visit.getDate());
+		visitDto.setDoctorId(visit.getDoctor().getId());
+		visitDto.setDoctorName(visit.getDoctor().getSurname() + " " + visit.getDoctor().getName());
+		visitDto.setNotes(visit.getNotes());
+		return visitDto;
+	}
+
+	@Override
+	public Visit toEntity(VisitDto visitDto) {
+		Visit visit = new Visit();
+		Doctor doctor = doctorService.toEntity(doctorService.getOneDoctor(visitDto.getDoctorId()));
+		visit.setId(visitDto.getId());
+		visit.setDate(visitDto.getDate());
+		visit.setDoctor(doctor);
+		visit.setNotes(visitDto.getNotes());
+		return visit;
 	}
 
 }

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import fr.lino.layani.lior.model.Visit;
+import fr.lino.layani.lior.dto.VisitDto;
 import fr.lino.layani.lior.service.VisitService;
 
 @CrossOrigin(origins = "http://localhost:4200")
@@ -25,23 +25,23 @@ public class VisitController {
 	private VisitService visitService;
 
 	@GetMapping
-	public List<Visit> getAllVisit() {
+	public List<VisitDto> getAllVisit() {
 		return visitService.getAllVisit();
 	}
 
 	@GetMapping("/{id}")
-	public Visit getOneVisit(@PathVariable int id) {
+	public VisitDto getOneVisit(@PathVariable int id) {
 		return visitService.getOneVisit(id);
 	}
 
 	@PostMapping
-	public Visit postCreateNewVisit(@RequestBody Visit visit) {
-		return visitService.postCreateNewVisit(visit);
+	public VisitDto postCreateOneVisit(@RequestBody VisitDto visitDto) {
+		return visitService.postCreateOneVisit(visitDto);
 	}
 
 	@PutMapping("/{id}")
-	public Visit putUpdateOneVisit(@RequestBody Visit visit, @PathVariable int id) {
-		return visitService.putUpdateOneVisit(visit, id);
+	public void putUpdateOneVisit(@RequestBody VisitDto visitDto) {
+		visitService.putUpdateOneVisit(visitDto);
 	}
 
 	@DeleteMapping("/{id}")

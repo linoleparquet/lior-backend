@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import fr.lino.layani.lior.model.Doctor;
+import fr.lino.layani.lior.dto.DoctorDto;
 import fr.lino.layani.lior.service.DoctorService;
 
 @CrossOrigin(origins = "http://localhost:4200")
@@ -25,23 +25,23 @@ public class DoctorController {
 	private DoctorService doctorService;
 
 	@GetMapping
-	public List<Doctor> getAllDoctor() {
+	public List<DoctorDto> getAllDoctor() {
 		return doctorService.getAllDoctor();
 	}
 
 	@GetMapping("/{id}")
-	public Doctor getOneDoctor(@PathVariable int id) {
+	public DoctorDto getOneDoctor(@PathVariable int id) {
 		return doctorService.getOneDoctor(id);
 	}
 
 	@PostMapping
-	public Doctor postCreateNewDoctor(@RequestBody Doctor doctor) {
-		return doctorService.postCreateNewDoctor(doctor);
+	public DoctorDto postCreateNewDoctor(@RequestBody DoctorDto doctorDto) {
+		return doctorService.postCreateOneDoctor(doctorDto);
 	}
 
 	@PutMapping("/{id}")
-	public Doctor putUpdateOneDoctor(@RequestBody Doctor doctor, @PathVariable int id) {
-		return doctorService.putUpdateOneDoctor(doctor, id);
+	public void putUpdateOneDoctor(@RequestBody DoctorDto doctorDto, @PathVariable int id) {
+		doctorService.putUpdateOneDoctor(doctorDto);
 	}
 
 	@DeleteMapping("/{id}")

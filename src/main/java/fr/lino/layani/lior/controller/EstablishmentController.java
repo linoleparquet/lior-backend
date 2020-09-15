@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import fr.lino.layani.lior.model.Establishment;
+import fr.lino.layani.lior.dto.EstablishmentDto;
 import fr.lino.layani.lior.service.EstablishmentService;
 
 @CrossOrigin(origins = "http://localhost:4200")
@@ -25,23 +25,23 @@ public class EstablishmentController {
 	private EstablishmentService establishmentService;
 
 	@GetMapping
-	public List<Establishment> getAllEstablishment() {
+	public List<EstablishmentDto> getAllEstablishment() {
 		return establishmentService.getAllEstablishment();
 	}
 
 	@GetMapping("/{id}")
-	public Establishment getOneEstablishment(@PathVariable int id) {
+	public EstablishmentDto getOneEstablishment(@PathVariable int id) {
 		return establishmentService.getOneEstablishment(id);
 	}
 
 	@PostMapping
-	public Establishment postCreateNewEstablishment(@RequestBody Establishment establishment) {
-		return establishmentService.postCreateNewEstablishment(establishment);
+	public EstablishmentDto postCreateNewEstablishment(@RequestBody EstablishmentDto establishmentDto) {
+		return establishmentService.postCreateOneEstablishment(establishmentDto);
 	}
 
 	@PutMapping("/{id}")
-	public Establishment putUpdateOneEstablishment(@RequestBody Establishment establishment, @PathVariable int id) {
-		return establishmentService.putUpdateOneEstablishment(establishment, id);
+	public void putUpdateOneEstablishment(@RequestBody EstablishmentDto establishmentDto, @PathVariable int id) {
+		establishmentService.putUpdateOneEstablishment(establishmentDto);
 	}
 
 	@DeleteMapping("/{id}")

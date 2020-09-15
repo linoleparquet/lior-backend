@@ -2,7 +2,7 @@ package fr.lino.layani.lior.model;
 
 import java.io.Serializable;
 import java.time.LocalDate;
-import java.util.Collection;
+import java.util.List;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
@@ -31,8 +31,8 @@ public class Doctor implements Serializable {
 	private String name;
 	private String surname;
 	private int periodicity; // Entier compris entre 1 et 12. tout les x mois /ans
-	@OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-	private Collection<Visit> visits;
+	@OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	private List<Visit> visits;
 	private LocalDate nextVisit;
 	@ManyToOne
 	private Establishment establishment;

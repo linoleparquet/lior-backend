@@ -27,7 +27,7 @@ public class Visit implements Comparable<Visit>, Serializable {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(fetch = FetchType.EAGER)
 	@JsonIdentityReference(alwaysAsId = true)
 	private Doctor doctor;
 	private LocalDate date;
