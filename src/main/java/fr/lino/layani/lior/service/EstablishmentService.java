@@ -2,23 +2,17 @@ package fr.lino.layani.lior.service;
 
 import java.util.List;
 
-import fr.lino.layani.lior.dto.EstablishmentDto;
 import fr.lino.layani.lior.model.Establishment;
 
 public interface EstablishmentService {
+	List<Establishment> getAllEstablishment();
 
-	List<EstablishmentDto> getAllEstablishment();
+	Establishment postCreateNewEstablishment(Establishment establishment);
 
-	EstablishmentDto getOneEstablishment(int id);
+	Establishment getOneEstablishment(int id);
 
-	EstablishmentDto postCreateOneEstablishment(EstablishmentDto establishmentDto);
-
-	void putUpdateOneEstablishment(EstablishmentDto establishmentDto);
+	Establishment putUpdateOneEstablishment(Establishment establishment, int id);
 
 	void deleteOneEstablishment(int id);
-
-	EstablishmentDto toDto(Establishment establishment);
-
-	Establishment toEntity(EstablishmentDto establishmentDto);
 
 }
