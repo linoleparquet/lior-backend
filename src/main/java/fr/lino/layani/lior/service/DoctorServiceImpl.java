@@ -11,7 +11,6 @@ import fr.lino.layani.lior.dto.DoctorDto;
 import fr.lino.layani.lior.exception.DoctorNotFoundException;
 import fr.lino.layani.lior.model.Doctor;
 import fr.lino.layani.lior.model.Establishment;
-import fr.lino.layani.lior.model.Visit;
 import fr.lino.layani.lior.repository.DoctorRepository;
 
 @Service
@@ -55,17 +54,6 @@ public class DoctorServiceImpl implements DoctorService {
 	}
 
 	@Override
-	public void updateNextVisit(Doctor doctor) {
-
-		if (doctor.getVisits() != null) {
-			Visit lastVisit = doctor.getVisits().stream().sorted().findFirst().orElseThrow();
-			LocalDate nextVisit = lastVisit.getDate().plusMonths(doctor.getPeriodicity());
-			doctor.setNextVisit(nextVisit);
-		}
-		doctorRepository.save(doctor);
-	}
-
-	@Override
 	public DoctorDto toDto(Doctor doctor) {
 		DoctorDto doctorDto = new DoctorDto();
 
@@ -74,13 +62,14 @@ public class DoctorServiceImpl implements DoctorService {
 		doctorDto.setDepartment(doctor.getEstablishment().getDepartment());
 		doctorDto.setId(doctor.getId());
 		doctorDto.setName(doctor.getName());
-		doctorDto.setNextVisit(doctor.getNextVisit());
 		doctorDto.setPeriodicity(doctor.getPeriodicity());
 		doctorDto.setSurname(doctor.getSurname());
-		doctorDto.setNextVisit(doctor.getNextVisit());
-		if (doctor.getVisits() != null) {
-			doctor.getVisits().stream().sorted().findFirst()
-					.ifPresent(visit -> doctorDto.setLastVisit(visit.getDate()));
+		if (doctor.getVisits() != null && !doctor.getVisits().isEmpty()) {
+			LocalDate lastVisit = doctor.getVisits().stream().sorted().findFirst().map(visit -> visit.getDate())
+					.orElseThrow();
+			LocalDate nextVisit = lastVisit.plusMonths(doctor.getPeriodicity());
+			doctorDto.setLastVisit(lastVisit);
+			doctorDto.setNextVisit(nextVisit);
 		}
 
 		return doctorDto;
@@ -95,10 +84,15 @@ public class DoctorServiceImpl implements DoctorService {
 		doctor.setEstablishment(establishment);
 		doctor.setId(doctorDto.getId());
 		doctor.setName(doctorDto.getName());
-		doctor.setNextVisit(doctorDto.getNextVisit());
 		doctor.setPeriodicity(doctorDto.getPeriodicity());
 		doctor.setSurname(doctorDto.getSurname());
 
 		return doctor;
+	}
+
+	@Override
+	public List<DoctorDto> findByEstablishmentId(int establishment) {
+		return doctorRepository.findByEstablishmentId(establishment).stream().map(this::toDto)
+				.collect(Collectors.toList());
 	}
 }

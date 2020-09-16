@@ -35,7 +35,6 @@ public class VisitServiceImpl implements VisitService {
 	public VisitDto postCreateOneVisit(VisitDto visitDto) {
 		Visit visit = toEntity(visitDto);
 		Visit visitCreated = visitRepository.save(visit);
-		doctorService.updateNextVisit(doctorService.getOneDoctor(visitDto.getDoctorId()));
 		return toDto(visitCreated);
 
 	}
@@ -44,14 +43,11 @@ public class VisitServiceImpl implements VisitService {
 	public void putUpdateOneVisit(VisitDto visitDto) {
 		Visit visit = toEntity(visitDto);
 		visitRepository.save(visit);
-		doctorService.updateNextVisit(doctorService.getOneDoctor(visitDto.getDoctorId()));
 	}
 
 	@Override
 	public void deleteOneVisit(int id) {
-		VisitDto visitDto = getOneVisit(id);
 		visitRepository.deleteById(id);
-		doctorService.updateNextVisit(doctorService.getOneDoctor(visitDto.getDoctorId()));
 	}
 
 	@Override

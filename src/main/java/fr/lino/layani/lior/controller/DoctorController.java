@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import fr.lino.layani.lior.dto.DoctorDto;
@@ -24,9 +25,14 @@ public class DoctorController {
 	@Autowired
 	private DoctorService doctorService;
 
-	@GetMapping
+	@GetMapping("/all")
 	public List<DoctorDto> getAllDoctor() {
 		return doctorService.getAllDoctor();
+	}
+
+	@GetMapping
+	public List<DoctorDto> findByEstablishmentId(@RequestParam int establishment) {
+		return doctorService.findByEstablishmentId(establishment);
 	}
 
 	@GetMapping("/{id}")

@@ -1,7 +1,6 @@
 package fr.lino.layani.lior.dto;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import lombok.Data;
 
@@ -16,5 +15,4 @@ public class DoctorDto {
 	private int periodicity;
 	private LocalDate lastVisit;
 	private LocalDate nextVisit;
-	private List<VisitDto> visitsDto;
 }

@@ -16,10 +16,10 @@ public interface DoctorService {
 
 	void deleteOneDoctor(int id);
 
-	void updateNextVisit(Doctor doctor);
-
 	DoctorDto toDto(Doctor doctor);
 
 	Doctor toEntity(DoctorDto doctorDto);
+
+	List<DoctorDto> findByEstablishmentId(int establishment);
 
 }

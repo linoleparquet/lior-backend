@@ -24,7 +24,7 @@ public class EstablishmentController {
 	@Autowired
 	private EstablishmentService establishmentService;
 
-	@GetMapping
+	@GetMapping("/all")
 	public List<EstablishmentDto> getAllEstablishment() {
 		return establishmentService.getAllEstablishment();
 	}
