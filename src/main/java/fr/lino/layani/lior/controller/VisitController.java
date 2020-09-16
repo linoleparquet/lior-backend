@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import fr.lino.layani.lior.dto.VisitDto;
@@ -24,7 +25,7 @@ public class VisitController {
 	@Autowired
 	private VisitService visitService;
 
-	@GetMapping
+	@GetMapping("/all")
 	public List<VisitDto> getAllVisit() {
 		return visitService.getAllVisit();
 	}
@@ -32,6 +33,11 @@ public class VisitController {
 	@GetMapping("/{id}")
 	public VisitDto getOneVisit(@PathVariable int id) {
 		return visitService.getOneVisit(id);
+	}
+
+	@GetMapping
+	public List<VisitDto> findByDoctorId(@RequestParam int doctor) {
+		return visitService.findByDoctorId(doctor);
 	}
 
 	@PostMapping
@@ -48,4 +54,5 @@ public class VisitController {
 	public void deleteOneVisit(@PathVariable int id) {
 		visitService.deleteOneVisit(id);
 	}
+
 }

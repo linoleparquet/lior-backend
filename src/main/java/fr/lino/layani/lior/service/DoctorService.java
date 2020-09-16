@@ -10,13 +10,13 @@ public interface DoctorService {
 
 	DoctorDto postCreateOneDoctor(DoctorDto doctorDto);
 
-	DoctorDto getOneDoctor(int id);
+	Doctor getOneDoctor(int id);
 
 	void putUpdateOneDoctor(DoctorDto doctorDto);
 
 	void deleteOneDoctor(int id);
 
-	void updateNextVisit(DoctorDto doctorDto);
+	void updateNextVisit(Doctor doctor);
 
 	DoctorDto toDto(Doctor doctor);
 

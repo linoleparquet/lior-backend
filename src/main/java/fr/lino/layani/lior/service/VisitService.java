@@ -20,4 +20,6 @@ public interface VisitService {
 
 	Visit toEntity(VisitDto visitDto);
 
+	List<VisitDto> findByDoctorId(int id);
+
 }

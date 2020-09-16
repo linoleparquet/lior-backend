@@ -39,8 +39,8 @@ public class DoctorServiceImpl implements DoctorService {
 	}
 
 	@Override
-	public DoctorDto getOneDoctor(int id) {
-		return doctorRepository.findById(id).map(this::toDto).orElseThrow(() -> new DoctorNotFoundException(id));
+	public Doctor getOneDoctor(int id) {
+		return doctorRepository.findById(id).orElseThrow(() -> new DoctorNotFoundException(id));
 	}
 
 	@Override
@@ -55,15 +55,14 @@ public class DoctorServiceImpl implements DoctorService {
 	}
 
 	@Override
-	public void updateNextVisit(DoctorDto doctorDto) {
-
-		Doctor doctor = toEntity(doctorDto);
+	public void updateNextVisit(Doctor doctor) {
 
 		if (doctor.getVisits() != null) {
 			Visit lastVisit = doctor.getVisits().stream().sorted().findFirst().orElseThrow();
 			LocalDate nextVisit = lastVisit.getDate().plusMonths(doctor.getPeriodicity());
 			doctor.setNextVisit(nextVisit);
 		}
+		doctorRepository.save(doctor);
 	}
 
 	@Override
@@ -84,8 +83,6 @@ public class DoctorServiceImpl implements DoctorService {
 					.ifPresent(visit -> doctorDto.setLastVisit(visit.getDate()));
 		}
 
-		doctorDto.setVisitsDto(
-				doctor.getVisits().stream().map(visit -> visitService.toDto(visit)).collect(Collectors.toList()));
 		return doctorDto;
 	}
 

@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import fr.lino.layani.lior.dto.DoctorDto;
 import fr.lino.layani.lior.dto.VisitDto;
 import fr.lino.layani.lior.exception.VisitNotFoundException;
 import fr.lino.layani.lior.model.Doctor;
@@ -36,8 +35,7 @@ public class VisitServiceImpl implements VisitService {
 	public VisitDto postCreateOneVisit(VisitDto visitDto) {
 		Visit visit = toEntity(visitDto);
 		Visit visitCreated = visitRepository.save(visit);
-		DoctorDto doctorDto = doctorService.getOneDoctor(visitDto.getDoctorId());
-		doctorService.updateNextVisit(doctorDto);
+		doctorService.updateNextVisit(doctorService.getOneDoctor(visitDto.getDoctorId()));
 		return toDto(visitCreated);
 
 	}
@@ -46,16 +44,14 @@ public class VisitServiceImpl implements VisitService {
 	public void putUpdateOneVisit(VisitDto visitDto) {
 		Visit visit = toEntity(visitDto);
 		visitRepository.save(visit);
-		DoctorDto doctorDto = doctorService.getOneDoctor(visitDto.getDoctorId());
-		doctorService.updateNextVisit(doctorDto);
+		doctorService.updateNextVisit(doctorService.getOneDoctor(visitDto.getDoctorId()));
 	}
 
 	@Override
 	public void deleteOneVisit(int id) {
 		VisitDto visitDto = getOneVisit(id);
 		visitRepository.deleteById(id);
-		DoctorDto doctorDto = doctorService.getOneDoctor(visitDto.getDoctorId());
-		doctorService.updateNextVisit(doctorDto);
+		doctorService.updateNextVisit(doctorService.getOneDoctor(visitDto.getDoctorId()));
 	}
 
 	@Override
@@ -72,12 +68,17 @@ public class VisitServiceImpl implements VisitService {
 	@Override
 	public Visit toEntity(VisitDto visitDto) {
 		Visit visit = new Visit();
-		Doctor doctor = doctorService.toEntity(doctorService.getOneDoctor(visitDto.getDoctorId()));
+		Doctor doctor = doctorService.getOneDoctor(visitDto.getDoctorId());
 		visit.setId(visitDto.getId());
 		visit.setDate(visitDto.getDate());
 		visit.setDoctor(doctor);
 		visit.setNotes(visitDto.getNotes());
 		return visit;
+	}
+
+	@Override
+	public List<VisitDto> findByDoctorId(int id) {
+		return visitRepository.findByDoctorId(id).stream().map(this::toDto).collect(Collectors.toList());
 	}
 
 }
