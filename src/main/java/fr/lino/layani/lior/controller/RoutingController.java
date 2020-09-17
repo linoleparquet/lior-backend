@@ -17,8 +17,13 @@ public class RoutingController {
 	@Autowired
 	private RoutingService routingService;
 
-	@GetMapping("/{vehicules}")
-	public String getRouting(@PathVariable int vehicules) {
-		return routingService.getRouting(vehicules);
+	@GetMapping("/VRP/{variable}")
+	public String getVrp(@PathVariable int variable) {
+		return routingService.getVrp(variable);
+	}
+
+	@GetMapping("/VRPTW/{variable}")
+	public String getVrptw(@PathVariable int variable) {
+		return routingService.getVrptw(variable);
 	}
 }
