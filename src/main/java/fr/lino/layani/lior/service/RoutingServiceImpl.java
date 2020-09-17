@@ -1,5 +1,6 @@
 package fr.lino.layani.lior.service;
 
+import java.io.File;
 import java.util.logging.Logger;
 
 import org.springframework.stereotype.Service;
@@ -17,7 +18,8 @@ import com.google.ortools.constraintsolver.main;
 public class RoutingServiceImpl implements RoutingService {
 
 	static {
-		System.loadLibrary("lib/jniortools");
+		File jniortools = new File("lib/" + System.mapLibraryName("jniortools"));
+		System.load(jniortools.getAbsolutePath());
 	}
 
 	private static final Logger logger = Logger.getLogger(RoutingServiceImpl.class.getName());
