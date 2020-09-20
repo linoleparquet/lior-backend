@@ -52,29 +52,16 @@
 			</exclusions>
 		</dependency>
 
-		<!-- Adding Google OR-Tools jars -->
+		<!-- https://mvnrepository.com/artifact/com.graphhopper/jsprit-core -->
 		<dependency>
-			<groupId>com.google</groupId>
-			<artifactId>ortools</artifactId>
-			<version>1.0</version>
+			<groupId>com.graphhopper</groupId>
+			<artifactId>jsprit-core</artifactId>
+			<version>1.9.0-beta.2</version>
 		</dependency>
 
-		<dependency>
-			<groupId>com.google</groupId>
-			<artifactId>protobuf</artifactId>
-			<version>1.0</version>
-		</dependency>
+
+
 	</dependencies>
-
-
-	<repositories>
-		<!-- In Project repository -->
-		<repository>
-			<id>in-project</id>
-			<name>In Project Repo</name>
-			<url>file://${project.basedir}/lib</url>
-		</repository>
-	</repositories>
 
 	<build>
 		<plugins>
