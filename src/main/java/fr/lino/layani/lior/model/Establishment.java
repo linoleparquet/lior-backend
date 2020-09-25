@@ -29,6 +29,8 @@ public class Establishment implements Serializable {
 	private Integer department;
 	private String city;
 	private String address;
+	private double x;
+	private double y;
 	@OneToMany(mappedBy = "establishment")
 	@JsonIdentityReference(alwaysAsId = true)
 	private Collection<Doctor> doctors;

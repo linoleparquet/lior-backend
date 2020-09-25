@@ -30,6 +30,7 @@ public class EstablishmentServiceImpl implements EstablishmentService {
 
 	@Override
 	public EstablishmentDto postCreateOneEstablishment(EstablishmentDto establishmentDto) {
+		// add coordinate
 		Establishment establishment = toEntity(establishmentDto);
 		Establishment establishmentCreated = establishmentRepository.save(establishment);
 		return toDto(establishmentCreated);
@@ -37,6 +38,7 @@ public class EstablishmentServiceImpl implements EstablishmentService {
 
 	@Override
 	public void putUpdateOneEstablishment(EstablishmentDto establishmentDto) {
+		// modify coordinate
 		Establishment establishment = toEntity(establishmentDto);
 		establishmentRepository.save(establishment);
 	}
