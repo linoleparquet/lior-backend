@@ -45,8 +45,7 @@ public class RoutingServiceImpl implements RoutingService {
 
 		return ids.stream().map(id -> {
 			Doctor doctor = doctorService.getOneDoctor(id);
-			Establishment establishment = doctor.getEstablishment();
-			return establishment;
+			return doctor.getEstablishment();
 		}).collect(Collectors.toList());
 
 //		// use setUserData()?
@@ -77,14 +76,15 @@ public class RoutingServiceImpl implements RoutingService {
 	@Override
 	public String getVrptw(List<Integer> ids) throws IOException, InterruptedException {
 
-		// Coordinate of user
+//		 --------------- Define Coordinate of user ------------------------------------
+
 		final String MAISON = "maison";
 		double x = 1.388738;
 		double y = 43.643089;
 
-		List<Establishment> listEstablishment = retrieveEstablishmentfromDoctorId(ids);
+//		------------------ Retrieve distance and duration from Project OSRM -----------------------------
 
-//		-----------------------------------------------------------------------------
+		List<Establishment> listEstablishment = retrieveEstablishmentfromDoctorId(ids);
 
 		String json = callHttp(listEstablishment, x, y);
 
@@ -93,35 +93,19 @@ public class RoutingServiceImpl implements RoutingService {
 
 //		-----------------------------------------------------------------------------
 
-		VehicleType type = VehicleTypeImpl.Builder.newInstance("type").addCapacityDimension(0, 2).setCostPerDistance(1)
-				.build();
-
-		Location maison = Location.Builder.newInstance().setCoordinate(new Coordinate(x, y)).setId(MAISON).build();
-		VehicleImpl vehicle = VehicleImpl.Builder.newInstance("vehicle").setStartLocation(maison).setType(type).build();
-
-		VehicleRoutingProblem.Builder problemBuilder = VehicleRoutingProblem.Builder.newInstance()
-				.setFleetSize(FleetSize.INFINITE);
-
+		// TO DO: create a better object than dis
 		List<String> establishmentName = new ArrayList<>();
 		establishmentName.add(MAISON);
 
-		for (Establishment establishment : listEstablishment) {
-			establishmentName.add(establishment.getName());
-			Coordinate coordinate = new Coordinate(establishment.getX(), establishment.getY());
-			Location location = Location.Builder.newInstance().setCoordinate(coordinate).setId(establishment.getName())
-					.build();
-			Service service = Service.Builder.newInstance(establishment.getName()).addSizeDimension(0, 1)
-					.setLocation(location).build();
-			problemBuilder.addJob(service);
-		}
+		VehicleRoutingProblem.Builder problemBuilder = createProblem(listEstablishment, establishmentName);
 
-		VehicleRoutingTransportCosts costMatrix = createMatrix(establishmentName, distances, durations);
-		problemBuilder.setRoutingCost(costMatrix).addVehicle(vehicle);
-		VehicleRoutingProblem problem = problemBuilder.build();
-		VehicleRoutingAlgorithm algorithm = Jsprit.Builder.newInstance(problem).buildAlgorithm();
-		Collection<VehicleRoutingProblemSolution> solutions = algorithm.searchSolutions();
-		VehicleRoutingProblemSolution bestSolution = Solutions.bestOf(solutions);
-		SolutionPrinter.print(problem, bestSolution, SolutionPrinter.Print.VERBOSE);
+		VehicleImpl vehicle = defineVehicle(x, y, MAISON);
+
+		VehicleRoutingProblem problem = buildProblem(establishmentName, distances, durations, vehicle, problemBuilder);
+
+		VehicleRoutingProblemSolution bestSolution = findBestSolution(problem);
+
+		printSolution(problem, bestSolution);
 
 		return null;
 
@@ -186,6 +170,50 @@ public class RoutingServiceImpl implements RoutingService {
 		}
 
 		return costMatrixBuilder.build();
+	}
+
+	public void printSolution(VehicleRoutingProblem problem, VehicleRoutingProblemSolution bestSolution) {
+		SolutionPrinter.print(problem, bestSolution, SolutionPrinter.Print.VERBOSE);
+	}
+
+	public VehicleRoutingProblem.Builder createProblem(List<Establishment> listEstablishment,
+			List<String> establishmentName) {
+		VehicleRoutingProblem.Builder problemBuilder = VehicleRoutingProblem.Builder.newInstance()
+				.setFleetSize(FleetSize.INFINITE);
+		for (Establishment establishment : listEstablishment) {
+			establishmentName.add(establishment.getName());
+			Coordinate coordinate = new Coordinate(establishment.getX(), establishment.getY());
+			Location location = Location.Builder.newInstance().setCoordinate(coordinate).setId(establishment.getName())
+					.build();
+			Service service = Service.Builder.newInstance(establishment.getName()).addSizeDimension(0, 1)
+					.setLocation(location).build();
+			problemBuilder.addJob(service);
+
+		}
+		return problemBuilder;
+	}
+
+	public VehicleImpl defineVehicle(double x, double y, String MAISON) {
+		VehicleType type = VehicleTypeImpl.Builder.newInstance("type").addCapacityDimension(0, 2).setCostPerDistance(1)
+				.build();
+
+		// Define starting (and ending) place
+		Location maison = Location.Builder.newInstance().setCoordinate(new Coordinate(x, y)).setId(MAISON).build();
+		// TO DO: define setEarliestStart and setLatestArrival
+		return VehicleImpl.Builder.newInstance("vehicle").setStartLocation(maison).setType(type).build();
+	}
+
+	public VehicleRoutingProblem buildProblem(List<String> establishmentName, double[][] distances,
+			double[][] durations, VehicleImpl vehicle, VehicleRoutingProblem.Builder problemBuilder) {
+		VehicleRoutingTransportCosts costMatrix = createMatrix(establishmentName, distances, durations);
+		problemBuilder.setRoutingCost(costMatrix).addVehicle(vehicle);
+		return problemBuilder.build();
+	}
+
+	public VehicleRoutingProblemSolution findBestSolution(VehicleRoutingProblem problem) {
+		VehicleRoutingAlgorithm algorithm = Jsprit.Builder.newInstance(problem).buildAlgorithm();
+		Collection<VehicleRoutingProblemSolution> solutions = algorithm.searchSolutions();
+		return Solutions.bestOf(solutions);
 	}
 
 	@Override
