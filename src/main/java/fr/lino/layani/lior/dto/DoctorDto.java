@@ -9,7 +9,7 @@ public class DoctorDto {
 	private int id;
 	private int establishmentId;
 	private String establishmentName;
-	private Integer department;
+	private String department;
 	private String name;
 	private String surname;
 	private int periodicity;

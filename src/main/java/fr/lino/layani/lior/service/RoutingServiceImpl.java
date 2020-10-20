@@ -6,6 +6,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -24,6 +25,8 @@ import com.graphhopper.jsprit.core.problem.VehicleRoutingProblem.FleetSize;
 import com.graphhopper.jsprit.core.problem.cost.VehicleRoutingTransportCosts;
 import com.graphhopper.jsprit.core.problem.job.Service;
 import com.graphhopper.jsprit.core.problem.solution.VehicleRoutingProblemSolution;
+import com.graphhopper.jsprit.core.problem.solution.route.VehicleRoute;
+import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivity;
 import com.graphhopper.jsprit.core.problem.vehicle.VehicleImpl;
 import com.graphhopper.jsprit.core.problem.vehicle.VehicleType;
 import com.graphhopper.jsprit.core.problem.vehicle.VehicleTypeImpl;
@@ -32,6 +35,8 @@ import com.graphhopper.jsprit.core.util.Coordinate;
 import com.graphhopper.jsprit.core.util.Solutions;
 import com.graphhopper.jsprit.core.util.VehicleRoutingTransportCostsMatrix;
 
+import fr.lino.layani.lior.dto.RoutingDto;
+import fr.lino.layani.lior.model.Destination;
 import fr.lino.layani.lior.model.Doctor;
 import fr.lino.layani.lior.model.Establishment;
 
@@ -41,81 +46,73 @@ public class RoutingServiceImpl implements RoutingService {
 	@Autowired
 	DoctorService doctorService;
 
-	public List<Establishment> retrieveEstablishmentfromDoctorId(List<Integer> ids) {
+	public List<Destination> retrieveDestinations(List<Integer> ids, Destination home) {
 
-		return ids.stream().map(id -> {
+		List<Destination> destinations = new ArrayList<>();
+		destinations.add(home);
+
+		destinations.addAll(ids.stream().map(id -> {
 			Doctor doctor = doctorService.getOneDoctor(id);
-			return doctor.getEstablishment();
-		}).collect(Collectors.toList());
+			Establishment establishment = doctor.getEstablishment();
+			Destination destination = new Destination();
+			destination.setId("" + id);
+			destination.setCoordinate(new Coordinate(establishment.getX(), establishment.getY()));
+			destination.setAddress(establishment.getAddress());
+			destination.setDoctorName(doctor.getSurname() + " " + doctor.getName());
+			destination.setEstablishmentName(establishment.getName());
 
-//		// use setUserData()?
-//		Establishment e1 = new Establishment();
-//		e1.setName("appart");
-//		e1.setX(1.443344);
-//		e1.setY(43.61149);
-//
-//		Establishment e2 = new Establishment();
-//		e2.setName("travail");
-//		e2.setX(1.341036);
-//		e2.setY(43.616246);
-//
-//		Establishment e3 = new Establishment();
-//		e3.setName("trawwail");
-//		e3.setX(1.4);
-//		e3.setY(43.616);
-//
-//		ArrayList<Establishment> listEstablishment = new ArrayList<>();
-//		listEstablishment.add(e1);
-//		listEstablishment.add(e2);
-//		listEstablishment.add(e3);
-//
-//		return listEstablishment;
+			return destination;
+		}).collect(Collectors.toList()));
 
+		return destinations;
 	}
 
 	@Override
-	public String getVrptw(List<Integer> ids) throws IOException, InterruptedException {
+	public RoutingDto getVrptw(List<Integer> ids) throws IOException, InterruptedException {
 
 //		 --------------- Define Coordinate of user ------------------------------------
 
-		final String MAISON = "maison";
-		double x = 1.388738;
-		double y = 43.643089;
+		Destination home = new Destination();
+		Coordinate coordinate = new Coordinate(1.388738, 43.643089);
+		home.setAddress("Address");
+		home.setEstablishmentName("Home");
+		home.setCoordinate(coordinate);
+		home.setId("0");
 
-//		------------------ Retrieve distance and duration from Project OSRM -----------------------------
+		final String EARLIEST_START = "09:00";
+		final String LATEST_ARRIVAL = "18:00";
+		final String WAITING_TIME = "00:30";
+		final int MAX_DESTINATONS_PER_DAY = 200;
 
-		List<Establishment> listEstablishment = retrieveEstablishmentfromDoctorId(ids);
+		final LocalTime waitingTime = LocalTime.parse(WAITING_TIME);
+		final LocalTime earliestStart = LocalTime.parse(EARLIEST_START);
+		final LocalTime latestArrival = LocalTime.parse(LATEST_ARRIVAL);
 
-		String json = callHttp(listEstablishment, x, y);
+//		------------------ Retrieve distance and duration from Project OSRM -----------
+
+		List<Destination> destinations = retrieveDestinations(ids, home);
+		String json = callHttp(destinations);
 
 		double[][] distances = parseJsonToArrayOfArray(json, "distances");
 		double[][] durations = parseJsonToArrayOfArray(json, "durations");
 
 //		-----------------------------------------------------------------------------
 
-		// TO DO: create a better object than dis
-		List<String> establishmentName = new ArrayList<>();
-		establishmentName.add(MAISON);
-
-		VehicleRoutingProblem.Builder problemBuilder = createProblem(listEstablishment, establishmentName);
-
-		VehicleImpl vehicle = defineVehicle(x, y, MAISON);
-
-		VehicleRoutingProblem problem = buildProblem(establishmentName, distances, durations, vehicle, problemBuilder);
-
+		VehicleRoutingProblem.Builder problemBuilder = createProblem(destinations, waitingTime);
+		VehicleImpl vehicle = defineVehicle(home, earliestStart, latestArrival, MAX_DESTINATONS_PER_DAY);
+		VehicleRoutingProblem problem = buildProblem(destinations, distances, durations, vehicle, problemBuilder);
 		VehicleRoutingProblemSolution bestSolution = findBestSolution(problem);
-
 		printSolution(problem, bestSolution);
 
-		return null;
+		return bestSolutionToRoutingDto(bestSolution);
 
 	}
 
-	public String getUrl(List<Establishment> listEstablishment, double x, double y) {
-		StringBuilder stringBuilder = new StringBuilder("http://router.project-osrm.org/table/v1/driving/").append(x)
-				.append(",").append(y).append(";");
-		for (Establishment establishment : listEstablishment) {
-			stringBuilder.append(establishment.getX()).append(",").append(establishment.getY()).append(";");
+	public String getUrl(List<Destination> destinations) {
+		StringBuilder stringBuilder = new StringBuilder("http://router.project-osrm.org/table/v1/driving/");
+		for (Destination destination : destinations) {
+			stringBuilder.append(destination.getCoordinate().getX()).append(",")
+					.append(destination.getCoordinate().getY()).append(";");
 		}
 		stringBuilder.deleteCharAt(stringBuilder.length() - 1);
 		stringBuilder.append("?annotations=duration,distance");
@@ -124,22 +121,12 @@ public class RoutingServiceImpl implements RoutingService {
 		return url;
 	}
 
-	private String callHttp(List<Establishment> listEstablishment, double x, double y)
-			throws IOException, InterruptedException {
-
-		String url = getUrl(listEstablishment, x, y);
-		HttpClient httpClient = HttpClient.newHttpClient();
-		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
-		HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
-		return response.body();
-	}
-
 	public double[][] parseJsonToArrayOfArray(String json, String field) {
 
 		JsonObject object = new JsonParser().parse(json).getAsJsonObject();
 		JsonArray array = object.get(field).getAsJsonArray();
 
-		double[][] output = new double[object.size()][object.size()];
+		double[][] output = new double[array.size()][array.size()];
 
 		for (int i = 0; i < array.size(); i++) {
 			JsonArray nestedArray = array.get(i).getAsJsonArray();
@@ -151,21 +138,31 @@ public class RoutingServiceImpl implements RoutingService {
 		return output;
 	}
 
-	public VehicleRoutingTransportCostsMatrix createMatrix(List<String> establishmentName, double[][] distances,
+	private String callHttp(List<Destination> destinations) throws IOException, InterruptedException {
+
+		String url = getUrl(destinations);
+		HttpClient httpClient = HttpClient.newHttpClient();
+		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
+		HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+		return response.body();
+	}
+
+	public VehicleRoutingTransportCostsMatrix createMatrix(List<Destination> destinations, double[][] distances,
 			double[][] durations) {
 		VehicleRoutingTransportCostsMatrix.Builder costMatrixBuilder = VehicleRoutingTransportCostsMatrix.Builder
 				.newInstance(true);
 
-		for (int i = 0; i < establishmentName.size(); i++) {
-			for (int j = 0; j < establishmentName.size(); j++) {
-				costMatrixBuilder.addTransportDistance(establishmentName.get(i), establishmentName.get(j),
-						distances[j][i]);
-				System.out.println("Distance: " + establishmentName.get(i) + " to " + establishmentName.get(j) + " is "
-						+ distances[j][i]);
+		List<String> ids = destinations.stream().map(destination -> destination.getId()).collect(Collectors.toList());
+		List<String> names = destinations.stream().map(destination -> destination.getDoctorName())
+				.collect(Collectors.toList());
 
-				costMatrixBuilder.addTransportTime(establishmentName.get(i), establishmentName.get(j), durations[j][i]);
-				System.out.println("Time: " + establishmentName.get(i) + " to " + establishmentName.get(j) + " is "
-						+ durations[j][i]);
+		for (int i = 0; i < ids.size(); i++) {
+			for (int j = 0; j < ids.size(); j++) {
+				costMatrixBuilder.addTransportDistance(ids.get(i), ids.get(j), distances[j][i]);
+				System.out.println("Distance: " + names.get(i) + " to " + names.get(j) + " is " + distances[j][i]);
+
+				costMatrixBuilder.addTransportTime(ids.get(i), ids.get(j), durations[j][i]);
+				System.out.println("Time: " + names.get(i) + " to " + names.get(j) + " is " + durations[j][i]);
 			}
 		}
 
@@ -176,36 +173,39 @@ public class RoutingServiceImpl implements RoutingService {
 		SolutionPrinter.print(problem, bestSolution, SolutionPrinter.Print.VERBOSE);
 	}
 
-	public VehicleRoutingProblem.Builder createProblem(List<Establishment> listEstablishment,
-			List<String> establishmentName) {
+	public VehicleRoutingProblem.Builder createProblem(List<Destination> destinations, LocalTime WAITING_TIME) {
 		VehicleRoutingProblem.Builder problemBuilder = VehicleRoutingProblem.Builder.newInstance()
-				.setFleetSize(FleetSize.INFINITE);
-		for (Establishment establishment : listEstablishment) {
-			establishmentName.add(establishment.getName());
-			Coordinate coordinate = new Coordinate(establishment.getX(), establishment.getY());
-			Location location = Location.Builder.newInstance().setCoordinate(coordinate).setId(establishment.getName())
+				.setFleetSize(FleetSize.FINITE);
+		for (Destination destination : destinations.subList(1, destinations.size())) {
+			Location location = Location.Builder.newInstance().setCoordinate(destination.getCoordinate())
+					.setId(destination.getId()).build();
+			// addSizeDimension ??
+			Service service = Service.Builder.newInstance(destination.getId()).addSizeDimension(0, 10)
+					.setServiceTime(WAITING_TIME.toSecondOfDay()).setLocation(location).setUserData(destination)
 					.build();
-			Service service = Service.Builder.newInstance(establishment.getName()).addSizeDimension(0, 1)
-					.setLocation(location).build();
 			problemBuilder.addJob(service);
 
 		}
 		return problemBuilder;
 	}
 
-	public VehicleImpl defineVehicle(double x, double y, String MAISON) {
-		VehicleType type = VehicleTypeImpl.Builder.newInstance("type").addCapacityDimension(0, 2).setCostPerDistance(1)
-				.build();
+	public VehicleImpl defineVehicle(Destination home, LocalTime earliestStart, LocalTime latestArrival,
+			int MAX_DESTINATONS_PER_DAY) {
+		VehicleType type = VehicleTypeImpl.Builder.newInstance("type").addCapacityDimension(0, MAX_DESTINATONS_PER_DAY)
+				.setCostPerDistance(1).build();
 
 		// Define starting (and ending) place
-		Location maison = Location.Builder.newInstance().setCoordinate(new Coordinate(x, y)).setId(MAISON).build();
+		Location maison = Location.Builder.newInstance().setCoordinate(home.getCoordinate()).setId(home.getId())
+				.build();
 		// TO DO: define setEarliestStart and setLatestArrival
-		return VehicleImpl.Builder.newInstance("vehicle").setStartLocation(maison).setType(type).build();
+		return VehicleImpl.Builder.newInstance("vehicle").setStartLocation(maison).setType(type)
+				.setEarliestStart(earliestStart.toSecondOfDay()).setLatestArrival(latestArrival.toSecondOfDay())
+				.build();
 	}
 
-	public VehicleRoutingProblem buildProblem(List<String> establishmentName, double[][] distances,
+	public VehicleRoutingProblem buildProblem(List<Destination> destinations, double[][] distances,
 			double[][] durations, VehicleImpl vehicle, VehicleRoutingProblem.Builder problemBuilder) {
-		VehicleRoutingTransportCosts costMatrix = createMatrix(establishmentName, distances, durations);
+		VehicleRoutingTransportCosts costMatrix = createMatrix(destinations, distances, durations);
 		problemBuilder.setRoutingCost(costMatrix).addVehicle(vehicle);
 		return problemBuilder.build();
 	}
@@ -216,9 +216,38 @@ public class RoutingServiceImpl implements RoutingService {
 		return Solutions.bestOf(solutions);
 	}
 
-	@Override
-	public String getVrp(int variable) {
-		// TODO Auto-generated method stub
-		return null;
+	public RoutingDto bestSolutionToRoutingDto(VehicleRoutingProblemSolution bestSolution) {
+		RoutingDto routingDto = new RoutingDto();
+		List<Destination> destinations = new ArrayList<>();
+		List<Destination> destinationsNotVisited = new ArrayList<>();
+
+		Service[] services = bestSolution.getRoutes().toArray(new VehicleRoute[bestSolution.getRoutes().size()])[0]
+				.getTourActivities().getJobs()
+				.toArray(new Service[bestSolution.getRoutes()
+						.toArray(new VehicleRoute[bestSolution.getRoutes().size()])[0].getTourActivities().getJobs()
+								.size()]);
+
+		TourActivity[] tourActivities = bestSolution.getRoutes()
+				.toArray(new VehicleRoute[bestSolution.getRoutes().size()])[0]
+						.getTourActivities().getActivities()
+						.toArray(new TourActivity[bestSolution.getRoutes()
+								.toArray(new VehicleRoute[bestSolution.getRoutes().size()])[0].getTourActivities()
+										.getActivities().size()]);
+
+		for (int i = 0; i < services.length; i++) {
+			Destination destination = (Destination) services[i].getUserData();
+			TourActivity tourActivity = tourActivities[i];
+			destination.setArrivalTime(LocalTime.ofSecondOfDay((long) tourActivity.getArrTime()));
+			destination.setEndTime(LocalTime.ofSecondOfDay((long) tourActivity.getEndTime()));
+			destination.setIndex(i + 1);
+
+			destinations.add(destination);
+		}
+
+		routingDto.setDestinations(destinations);
+		routingDto.setDestinationsNotVisited(destinationsNotVisited);
+
+		return routingDto;
+
 	}
 }

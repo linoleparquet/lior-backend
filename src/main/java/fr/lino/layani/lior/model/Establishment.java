@@ -26,7 +26,7 @@ public class Establishment implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;
 	private String name;
-	private Integer department;
+	private String department;
 	private String city;
 	private String address;
 	private double x;
