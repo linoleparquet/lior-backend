@@ -15,7 +15,7 @@ public class Destination {
 	String horaires;
 	String address;
 	Coordinate coordinate;
-	private int index;
-	private LocalTime arrivalTime;
-	private LocalTime endTime;
+	int index;
+	LocalTime arrivalTime;
+	LocalTime endTime;
 }
