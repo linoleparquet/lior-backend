@@ -9,4 +9,5 @@ public interface RoutingService {
 
 	RoutingDto getVrptw(List<Integer> ids) throws IOException, InterruptedException;
 
+    RoutingDto getVrptwAll() throws IOException, InterruptedException;
 }

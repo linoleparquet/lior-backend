@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import fr.lino.layani.lior.model.Visit;
+import org.apache.tomcat.jni.Local;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,9 +20,6 @@ public class DoctorServiceImpl implements DoctorService {
 
 	@Autowired
 	DoctorRepository doctorRepository;
-
-	@Autowired
-	VisitService visitService;
 
 	@Autowired
 	EstablishmentService establishmentService;
@@ -65,8 +64,7 @@ public class DoctorServiceImpl implements DoctorService {
 		doctorDto.setPeriodicity(doctor.getPeriodicity());
 		doctorDto.setSurname(doctor.getSurname());
 		if (doctor.getVisits() != null && !doctor.getVisits().isEmpty()) {
-			LocalDate lastVisit = doctor.getVisits().stream().sorted().findFirst().map(visit -> visit.getDate())
-					.orElseThrow();
+			LocalDate lastVisit = findLastVisit(doctor.getId());
 			LocalDate nextVisit = lastVisit.plusMonths(doctor.getPeriodicity());
 			doctorDto.setLastVisit(lastVisit);
 			doctorDto.setNextVisit(nextVisit);
@@ -94,5 +92,43 @@ public class DoctorServiceImpl implements DoctorService {
 	public List<DoctorDto> findByEstablishmentId(int establishment) {
 		return doctorRepository.findByEstablishmentId(establishment).stream().map(this::toDto)
 				.collect(Collectors.toList());
+	}
+
+	@Override
+	public LocalDate findLastVisit(int id){
+		Doctor doctor = getOneDoctor(id);
+		return doctor.getVisits().stream().sorted().findFirst().map(Visit::getDate).orElse(null);
+	}
+
+	@Override
+	public boolean isVisitPlannedBeforeNow(int id){
+		Doctor doctor = getOneDoctor(id);
+		LocalDate lastVisit = findLastVisit(doctor.getId());
+		if(lastVisit != null){
+			LocalDate nextVisit = lastVisit.plusMonths(doctor.getPeriodicity());
+			return nextVisit.isBefore(LocalDate.now());
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public boolean isVisitPlannedForThisMonth(int id){
+		Doctor doctor = getOneDoctor(id);
+		LocalDate lastVisit = findLastVisit(doctor.getId());
+		LocalDate now = LocalDate.now();
+		if(lastVisit != null){
+			LocalDate nextVisit = lastVisit.plusMonths(doctor.getPeriodicity());
+			return nextVisit.getMonth() == now.getMonth() && nextVisit.getYear() == now.getYear();
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public boolean isProspect(int id){
+		Doctor doctor = getOneDoctor(id);
+		LocalDate lastVisit = findLastVisit(doctor.getId());
+		return lastVisit == null;
 	}
 }

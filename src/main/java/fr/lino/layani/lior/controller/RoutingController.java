@@ -25,4 +25,9 @@ public class RoutingController {
 	public RoutingDto getVrptw(@RequestParam List<Integer> ids) throws IOException, InterruptedException {
 		return routingService.getVrptw(ids);
 	}
+
+	@GetMapping("/VRPTW/all")
+	public RoutingDto getVrptwAll() throws IOException, InterruptedException {
+		return routingService.getVrptwAll();
+	}
 }

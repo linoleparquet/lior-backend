@@ -6,12 +6,17 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.graphhopper.jsprit.core.problem.job.Job;
+import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivities;
+import fr.lino.layani.lior.repository.DoctorRepository;
+import org.apache.tomcat.jni.Local;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.google.gson.JsonArray;
@@ -45,6 +50,9 @@ public class RoutingServiceImpl implements RoutingService {
 
 	@Autowired
 	DoctorService doctorService;
+
+	@Autowired
+	DoctorRepository doctorRepository;
 
 	public List<Destination> retrieveDestinations(List<Integer> ids, Destination home) {
 
@@ -108,6 +116,18 @@ public class RoutingServiceImpl implements RoutingService {
 
 	}
 
+	@Override
+	public RoutingDto getVrptwAll() throws IOException, InterruptedException {
+		List<Doctor> doctors = doctorRepository.findAll();
+
+		List<Integer> ids = doctors.stream()
+				.map(Doctor::getId)
+				.filter(id -> { return doctorService.isProspect(id) || doctorService.isVisitPlannedBeforeNow(id) || doctorService.isVisitPlannedForThisMonth(id); })
+				.collect(Collectors.toList());
+
+		return getVrptw(ids);
+	}
+
 	public String getUrl(List<Destination> destinations) {
 		StringBuilder stringBuilder = new StringBuilder("http://router.project-osrm.org/table/v1/driving/");
 		for (Destination destination : destinations) {
@@ -152,7 +172,7 @@ public class RoutingServiceImpl implements RoutingService {
 		VehicleRoutingTransportCostsMatrix.Builder costMatrixBuilder = VehicleRoutingTransportCostsMatrix.Builder
 				.newInstance(true);
 
-		List<String> ids = destinations.stream().map(destination -> destination.getId()).collect(Collectors.toList());
+		List<String> ids = destinations.stream().map(Destination::getId).collect(Collectors.toList());
 		List<String> names = destinations.stream().map(destination -> destination.getDoctorName())
 				.collect(Collectors.toList());
 
@@ -219,20 +239,15 @@ public class RoutingServiceImpl implements RoutingService {
 	public RoutingDto bestSolutionToRoutingDto(VehicleRoutingProblemSolution bestSolution) {
 		RoutingDto routingDto = new RoutingDto();
 		List<Destination> destinations = new ArrayList<>();
-		List<Destination> destinationsNotVisited = new ArrayList<>();
+		
+		VehicleRoute bestRoute = bestSolution.getRoutes().stream().findFirst().orElseThrow();
+		TourActivities tour = bestRoute.getTourActivities();
 
-		Service[] services = bestSolution.getRoutes().toArray(new VehicleRoute[bestSolution.getRoutes().size()])[0]
-				.getTourActivities().getJobs()
-				.toArray(new Service[bestSolution.getRoutes()
-						.toArray(new VehicleRoute[bestSolution.getRoutes().size()])[0].getTourActivities().getJobs()
-								.size()]);
+		List<TourActivity> activites = tour.getActivities();
+		Collection<Job> jobs = tour.getJobs();
+		Service[] services = jobs.toArray(new Service[bestSolution.getRoutes().toArray(new VehicleRoute[bestSolution.getRoutes().size()])[0].getTourActivities().getJobs().size()]);
+		TourActivity[] tourActivities = activites.toArray(new TourActivity[bestSolution.getRoutes().toArray(new VehicleRoute[bestSolution.getRoutes().size()])[0].getTourActivities().getActivities().size()]);
 
-		TourActivity[] tourActivities = bestSolution.getRoutes()
-				.toArray(new VehicleRoute[bestSolution.getRoutes().size()])[0]
-						.getTourActivities().getActivities()
-						.toArray(new TourActivity[bestSolution.getRoutes()
-								.toArray(new VehicleRoute[bestSolution.getRoutes().size()])[0].getTourActivities()
-										.getActivities().size()]);
 
 		for (int i = 0; i < services.length; i++) {
 			Destination destination = (Destination) services[i].getUserData();
@@ -243,6 +258,15 @@ public class RoutingServiceImpl implements RoutingService {
 
 			destinations.add(destination);
 		}
+
+		List<Destination> destinationsNotVisited = bestSolution.getUnassignedJobs()
+				.stream()
+				.map(job -> (Service) job)
+				.map(service -> (Destination) service.getUserData())
+				.collect(Collectors.toList());
+
+
+
 
 		routingDto.setDestinations(destinations);
 		routingDto.setDestinationsNotVisited(destinationsNotVisited);
