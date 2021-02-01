@@ -6,7 +6,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,7 +15,6 @@ import java.util.stream.Collectors;
 import com.graphhopper.jsprit.core.problem.job.Job;
 import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivities;
 import fr.lino.layani.lior.repository.DoctorRepository;
-import org.apache.tomcat.jni.Local;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.google.gson.JsonArray;
@@ -54,6 +52,15 @@ public class RoutingServiceImpl implements RoutingService {
 	@Autowired
 	DoctorRepository doctorRepository;
 
+	final String EARLIEST_START = "09:00";
+	final String LATEST_ARRIVAL = "18:00";
+	final String WAITING_TIME = "00:30";
+	final int MAX_DESTINATIONS_PER_DAY = 200;
+
+	Coordinate coordinate = new Coordinate(1.388738, 43.643089);
+	Destination home = new Destination("Address", "Home", coordinate, "0");
+
+
 	public List<Destination> retrieveDestinations(List<Integer> ids, Destination home) {
 
 		List<Destination> destinations = new ArrayList<>();
@@ -80,18 +87,6 @@ public class RoutingServiceImpl implements RoutingService {
 
 //		 --------------- Define Coordinate of user ------------------------------------
 
-		Destination home = new Destination();
-		Coordinate coordinate = new Coordinate(1.388738, 43.643089);
-		home.setAddress("Address");
-		home.setEstablishmentName("Home");
-		home.setCoordinate(coordinate);
-		home.setId("0");
-
-		final String EARLIEST_START = "09:00";
-		final String LATEST_ARRIVAL = "18:00";
-		final String WAITING_TIME = "00:30";
-		final int MAX_DESTINATONS_PER_DAY = 200;
-
 		final LocalTime waitingTime = LocalTime.parse(WAITING_TIME);
 		final LocalTime earliestStart = LocalTime.parse(EARLIEST_START);
 		final LocalTime latestArrival = LocalTime.parse(LATEST_ARRIVAL);
@@ -107,7 +102,7 @@ public class RoutingServiceImpl implements RoutingService {
 //		-----------------------------------------------------------------------------
 
 		VehicleRoutingProblem.Builder problemBuilder = createProblem(destinations, waitingTime);
-		VehicleImpl vehicle = defineVehicle(home, earliestStart, latestArrival, MAX_DESTINATONS_PER_DAY);
+		VehicleImpl vehicle = defineVehicle(home, earliestStart, latestArrival, MAX_DESTINATIONS_PER_DAY);
 		VehicleRoutingProblem problem = buildProblem(destinations, distances, durations, vehicle, problemBuilder);
 		VehicleRoutingProblemSolution bestSolution = findBestSolution(problem);
 		printSolution(problem, bestSolution);
@@ -167,8 +162,7 @@ public class RoutingServiceImpl implements RoutingService {
 		return response.body();
 	}
 
-	public VehicleRoutingTransportCostsMatrix createMatrix(List<Destination> destinations, double[][] distances,
-			double[][] durations) {
+	public VehicleRoutingTransportCostsMatrix createMatrix(List<Destination> destinations, double[][] distances, double[][] durations) {
 		VehicleRoutingTransportCostsMatrix.Builder costMatrixBuilder = VehicleRoutingTransportCostsMatrix.Builder
 				.newInstance(true);
 
@@ -243,10 +237,10 @@ public class RoutingServiceImpl implements RoutingService {
 		VehicleRoute bestRoute = bestSolution.getRoutes().stream().findFirst().orElseThrow();
 		TourActivities tour = bestRoute.getTourActivities();
 
-		List<TourActivity> activites = tour.getActivities();
+		List<TourActivity> activities = tour.getActivities();
 		Collection<Job> jobs = tour.getJobs();
 		Service[] services = jobs.toArray(new Service[bestSolution.getRoutes().toArray(new VehicleRoute[bestSolution.getRoutes().size()])[0].getTourActivities().getJobs().size()]);
-		TourActivity[] tourActivities = activites.toArray(new TourActivity[bestSolution.getRoutes().toArray(new VehicleRoute[bestSolution.getRoutes().size()])[0].getTourActivities().getActivities().size()]);
+		TourActivity[] tourActivities = activities.toArray(new TourActivity[bestSolution.getRoutes().toArray(new VehicleRoute[bestSolution.getRoutes().size()])[0].getTourActivities().getActivities().size()]);
 
 
 		for (int i = 0; i < services.length; i++) {
@@ -264,8 +258,6 @@ public class RoutingServiceImpl implements RoutingService {
 				.map(job -> (Service) job)
 				.map(service -> (Destination) service.getUserData())
 				.collect(Collectors.toList());
-
-
 
 
 		routingDto.setDestinations(destinations);

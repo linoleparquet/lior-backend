@@ -18,4 +18,13 @@ public class Destination {
 	int index;
 	LocalTime arrivalTime;
 	LocalTime endTime;
+
+	public Destination(String address, String establishmentName, Coordinate coordinate, String id){
+		this.address = address;
+		this.establishmentName = establishmentName;
+		this.coordinate = coordinate;
+		this.id = id;
+	}
+
+	public Destination(){}
 }
