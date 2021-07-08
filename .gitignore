@@ -1,3 +1,6 @@
 target
 h2
 lib
+.mvn
+.idea
+.settings
