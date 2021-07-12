@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 import fr.lino.layani.lior.dto.EstablishmentDto;
 import fr.lino.layani.lior.service.EstablishmentService;
 
-@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/establishments")
 public class EstablishmentController {

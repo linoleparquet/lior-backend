@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 import fr.lino.layani.lior.dto.VisitDto;
 import fr.lino.layani.lior.service.VisitService;
 
-@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/visits")
 public class VisitController {
