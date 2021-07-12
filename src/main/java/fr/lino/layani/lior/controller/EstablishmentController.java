@@ -1,9 +1,9 @@
 package fr.lino.layani.lior.controller;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +20,8 @@ import fr.lino.layani.lior.service.EstablishmentService;
 @RequestMapping("/establishments")
 public class EstablishmentController {
 
+	Logger LOGGER = Logger.getLogger(this.getClass().getName());
+
 	@Autowired
 	private EstablishmentService establishmentService;
 
@@ -35,16 +37,19 @@ public class EstablishmentController {
 
 	@PostMapping
 	public EstablishmentDto postCreateNewEstablishment(@RequestBody EstablishmentDto establishmentDto) {
+		LOGGER.info("Creating Establishment: " + establishmentDto);
 		return establishmentService.postCreateOneEstablishment(establishmentDto);
 	}
 
 	@PutMapping("/{id}")
 	public void putUpdateOneEstablishment(@RequestBody EstablishmentDto establishmentDto, @PathVariable int id) {
+		LOGGER.info("Updating Establishment: " + establishmentDto);
 		establishmentService.putUpdateOneEstablishment(establishmentDto);
 	}
 
 	@DeleteMapping("/{id}")
 	public void deleteOneEstablishment(@PathVariable int id) {
+		LOGGER.info("Deleting Establishment with id: " + id);
 		establishmentService.deleteOneEstablishment(id);
 	}
 }

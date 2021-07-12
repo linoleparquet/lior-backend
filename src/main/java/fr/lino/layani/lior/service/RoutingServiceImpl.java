@@ -10,6 +10,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import com.graphhopper.jsprit.core.problem.job.Job;
@@ -45,6 +46,8 @@ import fr.lino.layani.lior.model.Establishment;
 
 @org.springframework.stereotype.Service
 public class RoutingServiceImpl implements RoutingService {
+
+	Logger LOGGER = Logger.getLogger(this.getClass().getName());
 
 	@Autowired
 	DoctorService doctorService;
