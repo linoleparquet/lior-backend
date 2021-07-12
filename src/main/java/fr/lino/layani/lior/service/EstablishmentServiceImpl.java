@@ -55,6 +55,8 @@ public class EstablishmentServiceImpl implements EstablishmentService {
 		establishmentDto.setDepartment(establishment.getDepartment());
 		establishmentDto.setId(establishment.getId());
 		establishmentDto.setName(establishment.getName());
+		establishmentDto.setX(establishment.getX());
+		establishmentDto.setY(establishment.getY());
 
 		return establishmentDto;
 	}
