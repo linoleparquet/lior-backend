@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 import fr.lino.layani.lior.dto.RoutingDto;
 import fr.lino.layani.lior.service.RoutingService;
 
-@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/routing")
 public class RoutingController {
