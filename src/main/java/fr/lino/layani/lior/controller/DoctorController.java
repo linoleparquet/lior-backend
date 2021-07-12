@@ -1,6 +1,7 @@
 package fr.lino.layani.lior.controller;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -20,6 +21,8 @@ import fr.lino.layani.lior.service.DoctorService;
 @RestController
 @RequestMapping("/doctors")
 public class DoctorController {
+
+	Logger LOGGER = Logger.getLogger(this.getClass().getName());
 
 	@Autowired
 	private DoctorService doctorService;
@@ -41,16 +44,19 @@ public class DoctorController {
 
 	@PostMapping
 	public DoctorDto postCreateNewDoctor(@RequestBody DoctorDto doctorDto) {
+		LOGGER.info("Creating Doctor: " + doctorDto);
 		return doctorService.postCreateOneDoctor(doctorDto);
 	}
 
 	@PutMapping("/{id}")
 	public void putUpdateOneDoctor(@RequestBody DoctorDto doctorDto, @PathVariable int id) {
+		LOGGER.info("Updating Doctor: " + doctorDto);
 		doctorService.putUpdateOneDoctor(doctorDto);
 	}
 
 	@DeleteMapping("/{id}")
 	public void deleteOneDoctor(@PathVariable int id) {
+		LOGGER.info("Deleting Doctor with id " + id);
 		doctorService.deleteOneDoctor(id);
 	}
 }

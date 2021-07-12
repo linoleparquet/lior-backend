@@ -1,6 +1,7 @@
 package fr.lino.layani.lior.controller;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -20,6 +21,8 @@ import fr.lino.layani.lior.service.VisitService;
 @RestController
 @RequestMapping("/visits")
 public class VisitController {
+
+	Logger LOGGER = Logger.getLogger(this.getClass().getName());
 
 	@Autowired
 	private VisitService visitService;
@@ -41,16 +44,19 @@ public class VisitController {
 
 	@PostMapping
 	public VisitDto postCreateOneVisit(@RequestBody VisitDto visitDto) {
+		LOGGER.info("Creating Visit :" + visitDto);
 		return visitService.postCreateOneVisit(visitDto);
 	}
 
 	@PutMapping("/{id}")
 	public void putUpdateOneVisit(@RequestBody VisitDto visitDto) {
+		LOGGER.info("Updating Visit :" + visitDto);
 		visitService.putUpdateOneVisit(visitDto);
 	}
 
 	@DeleteMapping("/{id}")
 	public void deleteOneVisit(@PathVariable int id) {
+		LOGGER.info("Deleting Visit with id:" + id);
 		visitService.deleteOneVisit(id);
 	}
 
