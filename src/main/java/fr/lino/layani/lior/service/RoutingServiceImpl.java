@@ -50,6 +50,14 @@ public class RoutingServiceImpl implements RoutingService {
 	Coordinate coordinate = new Coordinate(1.388738, 43.643089);
 	Destination startingDestination = new Destination("Address", "startingDestination", coordinate, "0");
 
+	/**
+	 * Solve the Vehicle Routing Problem with Time Constraint (VRPTW)
+	 * for the doctors whom ids are passed as parameter
+	 * @param ids List of doctor's ids that need to be visited
+	 * @return RoutingDto Object to be parsed by the frontend
+	 * @throws IOException Exception
+	 * @throws InterruptedException Exception
+	 */
 	@Override
 	public RoutingDto getVrptw(List<Integer> ids) throws IOException, InterruptedException {
 
@@ -59,21 +67,26 @@ public class RoutingServiceImpl implements RoutingService {
 		final LocalTime earliestStart = LocalTime.parse(EARLIEST_START);
 		final LocalTime latestArrival = LocalTime.parse(LATEST_ARRIVAL);
 
-//		------------------ Retrieve distance and duration matrix from OSRM Project -----------
-
+		// The 'destinations' variable helps creating the distance matrix and the duration matrix.
 		List<Destination> destinations = retrieveDestinations(ids, startingDestination);
+		// Retrieve distance and duration matrix from OSRM Project
 		DistanceDurationMatrices distanceDurationMatrices = osrmProjectService.getDistanceDurationMatrices(destinations);
-
-//		-----------------------------------------------------------------------------
-
+		// Adding the startingDestination as the first step and the last step of our route
 		VehicleRoutingProblemSolution bestSolution = vrptwService.getVehicleRoutingProblemSolution(destinations, waitingTime, startingDestination, earliestStart, latestArrival, MAX_DESTINATIONS_PER_DAY, distanceDurationMatrices);
 
 		String encodedPolyline = getEncodedPolyline(bestSolution);
 
-		return bestSolutionToRoutingDto(bestSolution, encodedPolyline);
+		return generatingRoutingDto(bestSolution, encodedPolyline);
 
 	}
 
+	/**
+	 * Solve the Vehicle Routing Problem with Time Constraint (VRPTW)
+	 * for all doctors that needs to be visited.
+	 * @return A RoutingDto Object to be parsed by the frontend
+	 * @throws IOException Exception
+	 * @throws InterruptedException Exception
+	 */
 	@Override
 	public RoutingDto getVrptwAll() throws IOException, InterruptedException {
 		List<Doctor> doctors = doctorRepository.findAll();
@@ -86,7 +99,7 @@ public class RoutingServiceImpl implements RoutingService {
 		return getVrptw(ids);
 	}
 
-	public List<Destination> retrieveDestinations(List<Integer> ids, Destination startingDestination) {
+	private List<Destination> retrieveDestinations(List<Integer> ids, Destination startingDestination) {
 
 		List<Destination> destinations = new ArrayList<>();
 		// We add the startingDestination to generate the duration & distance matrix
@@ -108,7 +121,7 @@ public class RoutingServiceImpl implements RoutingService {
 		return destinations;
 	}
 
-	private RoutingDto bestSolutionToRoutingDto(VehicleRoutingProblemSolution bestSolution, String encodedPolyline) {
+	private RoutingDto generatingRoutingDto(VehicleRoutingProblemSolution bestSolution, String encodedPolyline) {
 		RoutingDto routingDto = new RoutingDto();
 
 		routingDto.setStartingDestination(startingDestination);
