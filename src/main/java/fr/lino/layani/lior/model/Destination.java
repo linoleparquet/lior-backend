@@ -18,6 +18,7 @@ public class Destination {
 	int index;
 	LocalTime arrivalTime;
 	LocalTime endTime;
+	LocalTime duration;
 
 	public Destination(String address, String establishmentName, Coordinate coordinate, String id){
 		this.address = address;

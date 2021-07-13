@@ -61,13 +61,14 @@ public class RoutingServiceImpl implements RoutingService {
 	final int MAX_DESTINATIONS_PER_DAY = 200;
 
 	Coordinate coordinate = new Coordinate(1.388738, 43.643089);
-	Destination home = new Destination("Address", "Home", coordinate, "0");
+	Destination startingDestination = new Destination("Address", "startingDestination", coordinate, "0");
 
 
-	public List<Destination> retrieveDestinations(List<Integer> ids, Destination home) {
+	public List<Destination> retrieveDestinations(List<Integer> ids, Destination startingDestination) {
 
 		List<Destination> destinations = new ArrayList<>();
-		destinations.add(home);
+		// We add the startingDestination to generate the duration & distance matrix
+		destinations.add(startingDestination);
 
 		destinations.addAll(ids.stream().map(id -> {
 			Doctor doctor = doctorService.getOneDoctor(id);
@@ -96,7 +97,7 @@ public class RoutingServiceImpl implements RoutingService {
 
 //		------------------ Retrieve distance and duration from Project OSRM -----------
 
-		List<Destination> destinations = retrieveDestinations(ids, home);
+		List<Destination> destinations = retrieveDestinations(ids, startingDestination);
 		String json = callHttp(destinations);
 
 		double[][] distances = parseJsonToArrayOfArray(json, "distances");
@@ -105,7 +106,7 @@ public class RoutingServiceImpl implements RoutingService {
 //		-----------------------------------------------------------------------------
 
 		VehicleRoutingProblem.Builder problemBuilder = createProblem(destinations, waitingTime);
-		VehicleImpl vehicle = defineVehicle(home, earliestStart, latestArrival, MAX_DESTINATIONS_PER_DAY);
+		VehicleImpl vehicle = defineVehicle(startingDestination, earliestStart, latestArrival, MAX_DESTINATIONS_PER_DAY);
 		VehicleRoutingProblem problem = buildProblem(destinations, distances, durations, vehicle, problemBuilder);
 		VehicleRoutingProblemSolution bestSolution = findBestSolution(problem);
 		printSolution(problem, bestSolution);
@@ -120,7 +121,7 @@ public class RoutingServiceImpl implements RoutingService {
 
 		List<Integer> ids = doctors.stream()
 				.map(Doctor::getId)
-				.filter(id -> { return doctorService.isProspect(id) || doctorService.isVisitPlannedBeforeNow(id) || doctorService.isVisitPlannedForThisMonth(id); })
+				.filter(id ->  doctorService.isProspect(id) || doctorService.isVisitPlannedBeforeNow(id) || doctorService.isVisitPlannedForThisMonth(id))
 				.collect(Collectors.toList());
 
 		return getVrptw(ids);
@@ -135,7 +136,7 @@ public class RoutingServiceImpl implements RoutingService {
 		stringBuilder.deleteCharAt(stringBuilder.length() - 1);
 		stringBuilder.append("?annotations=duration,distance");
 		String url = stringBuilder.toString();
-		System.out.println(url);
+		LOGGER.info(url);
 		return url;
 	}
 
@@ -170,16 +171,16 @@ public class RoutingServiceImpl implements RoutingService {
 				.newInstance(true);
 
 		List<String> ids = destinations.stream().map(Destination::getId).collect(Collectors.toList());
-		List<String> names = destinations.stream().map(destination -> destination.getDoctorName())
+		List<String> names = destinations.stream().map(Destination::getDoctorName)
 				.collect(Collectors.toList());
 
 		for (int i = 0; i < ids.size(); i++) {
 			for (int j = 0; j < ids.size(); j++) {
 				costMatrixBuilder.addTransportDistance(ids.get(i), ids.get(j), distances[j][i]);
-				System.out.println("Distance: " + names.get(i) + " to " + names.get(j) + " is " + distances[j][i]);
+				LOGGER.info("Distance: " + names.get(i) + " to " + names.get(j) + " is " + distances[j][i]);
 
 				costMatrixBuilder.addTransportTime(ids.get(i), ids.get(j), durations[j][i]);
-				System.out.println("Time: " + names.get(i) + " to " + names.get(j) + " is " + durations[j][i]);
+				LOGGER.info("Time: " + names.get(i) + " to " + names.get(j) + " is " + durations[j][i]);
 			}
 		}
 
@@ -194,11 +195,15 @@ public class RoutingServiceImpl implements RoutingService {
 		VehicleRoutingProblem.Builder problemBuilder = VehicleRoutingProblem.Builder.newInstance()
 				.setFleetSize(FleetSize.FINITE);
 		for (Destination destination : destinations.subList(1, destinations.size())) {
-			Location location = Location.Builder.newInstance().setCoordinate(destination.getCoordinate())
+			Location location = Location.Builder.newInstance()
+					.setCoordinate(destination.getCoordinate())
 					.setId(destination.getId()).build();
 			// addSizeDimension ??
-			Service service = Service.Builder.newInstance(destination.getId()).addSizeDimension(0, 10)
-					.setServiceTime(WAITING_TIME.toSecondOfDay()).setLocation(location).setUserData(destination)
+			Service service = Service.Builder.newInstance(destination.getId())
+					.addSizeDimension(0, 10)
+					.setServiceTime(WAITING_TIME.toSecondOfDay())
+					.setLocation(location)
+					.setUserData(destination)
 					.build();
 			problemBuilder.addJob(service);
 
@@ -206,17 +211,24 @@ public class RoutingServiceImpl implements RoutingService {
 		return problemBuilder;
 	}
 
-	public VehicleImpl defineVehicle(Destination home, LocalTime earliestStart, LocalTime latestArrival,
-			int MAX_DESTINATONS_PER_DAY) {
-		VehicleType type = VehicleTypeImpl.Builder.newInstance("type").addCapacityDimension(0, MAX_DESTINATONS_PER_DAY)
-				.setCostPerDistance(1).build();
+	public VehicleImpl defineVehicle(Destination startingDestination, LocalTime earliestStart, LocalTime latestArrival,
+			int MAX_DESTINATIONS_PER_DAY) {
+		VehicleType type = VehicleTypeImpl.Builder.newInstance("type")
+				.addCapacityDimension(0, MAX_DESTINATIONS_PER_DAY)
+				.setCostPerDistance(1)
+				.build();
 
 		// Define starting (and ending) place
-		Location maison = Location.Builder.newInstance().setCoordinate(home.getCoordinate()).setId(home.getId())
+		Location maison = Location.Builder.newInstance()
+				.setCoordinate(startingDestination.getCoordinate())
+				.setId(startingDestination.getId())
 				.build();
 		// TO DO: define setEarliestStart and setLatestArrival
-		return VehicleImpl.Builder.newInstance("vehicle").setStartLocation(maison).setType(type)
-				.setEarliestStart(earliestStart.toSecondOfDay()).setLatestArrival(latestArrival.toSecondOfDay())
+		return VehicleImpl.Builder.newInstance("vehicle")
+				.setStartLocation(maison)
+				.setType(type)
+				.setEarliestStart(earliestStart.toSecondOfDay())
+				.setLatestArrival(latestArrival.toSecondOfDay())
 				.build();
 	}
 
@@ -239,7 +251,6 @@ public class RoutingServiceImpl implements RoutingService {
 		
 		VehicleRoute bestRoute = bestSolution.getRoutes().stream().findFirst().orElseThrow();
 		TourActivities tour = bestRoute.getTourActivities();
-
 		List<TourActivity> activities = tour.getActivities();
 		Collection<Job> jobs = tour.getJobs();
 		Service[] services = jobs.toArray(new Service[bestSolution.getRoutes().toArray(new VehicleRoute[bestSolution.getRoutes().size()])[0].getTourActivities().getJobs().size()]);
@@ -251,8 +262,8 @@ public class RoutingServiceImpl implements RoutingService {
 			TourActivity tourActivity = tourActivities[i];
 			destination.setArrivalTime(LocalTime.ofSecondOfDay((long) tourActivity.getArrTime()));
 			destination.setEndTime(LocalTime.ofSecondOfDay((long) tourActivity.getEndTime()));
+			destination.setDuration(LocalTime.ofSecondOfDay((long) tourActivity.getOperationTime()));
 			destination.setIndex(i + 1);
-
 			destinations.add(destination);
 		}
 
@@ -263,6 +274,7 @@ public class RoutingServiceImpl implements RoutingService {
 				.collect(Collectors.toList());
 
 
+		routingDto.setStartingDestination(startingDestination);
 		routingDto.setDestinations(destinations);
 		routingDto.setDestinationsNotVisited(destinationsNotVisited);
 
