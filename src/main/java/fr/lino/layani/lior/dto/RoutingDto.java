@@ -11,4 +11,5 @@ public class RoutingDto {
 	private Destination startingDestination;
 	private List<Destination> destinations;
 	private List<Destination> destinationsNotVisited;
+	private String encodedPolyline;
 }

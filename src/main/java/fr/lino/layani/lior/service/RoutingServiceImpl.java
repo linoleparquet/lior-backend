@@ -67,7 +67,10 @@ public class RoutingServiceImpl implements RoutingService {
 //		-----------------------------------------------------------------------------
 
 		VehicleRoutingProblemSolution bestSolution = vrptwService.getVehicleRoutingProblemSolution(destinations, waitingTime, startingDestination, earliestStart, latestArrival, MAX_DESTINATIONS_PER_DAY, distanceDurationMatrices);
-		return bestSolutionToRoutingDto(bestSolution);
+
+		String encodedPolyline = getEncodedPolyline(bestSolution);
+
+		return bestSolutionToRoutingDto(bestSolution, encodedPolyline);
 
 	}
 
@@ -105,10 +108,20 @@ public class RoutingServiceImpl implements RoutingService {
 		return destinations;
 	}
 
-	public RoutingDto bestSolutionToRoutingDto(VehicleRoutingProblemSolution bestSolution) {
+	private RoutingDto bestSolutionToRoutingDto(VehicleRoutingProblemSolution bestSolution, String encodedPolyline) {
 		RoutingDto routingDto = new RoutingDto();
+
+		routingDto.setStartingDestination(startingDestination);
+		routingDto.setDestinations(getDestinationVisited(bestSolution));
+		routingDto.setDestinationsNotVisited(getDestinationNotVisited(bestSolution));
+		routingDto.setEncodedPolyline(encodedPolyline);
+
+		return routingDto;
+	}
+
+	private List<Destination> getDestinationVisited(VehicleRoutingProblemSolution bestSolution) {
 		List<Destination> destinations = new ArrayList<>();
-		
+
 		VehicleRoute bestRoute = bestSolution.getRoutes().stream().findFirst().orElseThrow();
 		TourActivities tour = bestRoute.getTourActivities();
 		List<TourActivity> activities = tour.getActivities();
@@ -127,18 +140,24 @@ public class RoutingServiceImpl implements RoutingService {
 			destinations.add(destination);
 		}
 
-		List<Destination> destinationsNotVisited = bestSolution.getUnassignedJobs()
+		return destinations;
+	}
+
+	private List<Destination> getDestinationNotVisited(VehicleRoutingProblemSolution bestSolution) {
+		return bestSolution.getUnassignedJobs()
 				.stream()
 				.map(job -> (Service) job)
 				.map(service -> (Destination) service.getUserData())
 				.collect(Collectors.toList());
+	}
 
+	private String getEncodedPolyline(VehicleRoutingProblemSolution bestSolution) throws IOException, InterruptedException {
 
-		routingDto.setStartingDestination(startingDestination);
-		routingDto.setDestinations(destinations);
-		routingDto.setDestinationsNotVisited(destinationsNotVisited);
+		// adding the starting destination at the beginning and the end of the tour.
+		ArrayList<Destination> destinations = (ArrayList<Destination>) getDestinationVisited(bestSolution);
+		destinations.add(0, startingDestination);
+		destinations.add(startingDestination);
 
-		return routingDto;
-
+		return osrmProjectService.getEncodedPolyline(destinations);
 	}
 }
