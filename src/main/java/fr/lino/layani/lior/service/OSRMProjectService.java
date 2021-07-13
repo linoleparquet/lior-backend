@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface OSRMProjectService {
     DistanceDurationMatrices getDistanceDurationMatrices(List<Destination> destinations) throws IOException, InterruptedException;
+
+    String getEncodedPolyline(List<Destination> destinations) throws IOException, InterruptedException;
 }
