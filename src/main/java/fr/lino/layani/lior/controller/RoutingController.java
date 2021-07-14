@@ -21,12 +21,12 @@ public class RoutingController {
 	private RoutingService routingService;
 
 	@GetMapping("/VRPTW")
-	public RoutingDto getVrptw(@RequestParam List<Integer> ids) throws IOException, InterruptedException {
+	public RoutingDto getVrptw(@RequestParam List<Integer> ids) throws IOException, InterruptedException, CloneNotSupportedException {
 		return routingService.getVrptw(ids);
 	}
 
 	@GetMapping("/VRPTW/all")
-	public RoutingDto getVrptwAll() throws IOException, InterruptedException {
+	public RoutingDto getVrptwAll() throws IOException, InterruptedException, CloneNotSupportedException {
 		return routingService.getVrptwAll();
 	}
 }

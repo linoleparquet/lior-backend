@@ -56,7 +56,7 @@ public class VRPTWServiceImpl implements VRPTWService {
         VehicleRoutingProblem.Builder problemBuilder = VehicleRoutingProblem.Builder.newInstance()
                 .setFleetSize(VehicleRoutingProblem.FleetSize.FINITE);
 
-        // The first destination of the list is the startingDestination. We don't want to consider it as a Job
+        // The first destination of the list is the startingDestination. We don't want to create a Job for the startingDestination
         for (Destination destination : destinations.subList(1, destinations.size())) {
 
             Location location = Location.Builder.newInstance()

@@ -7,7 +7,7 @@ import com.graphhopper.jsprit.core.util.Coordinate;
 import lombok.Data;
 
 @Data
-public class Destination {
+public class Destination implements Cloneable {
 
 	String id;
 	String establishmentName;
@@ -15,7 +15,6 @@ public class Destination {
 	String horaires;
 	String address;
 	Coordinate coordinate;
-	int index;
 	LocalTime arrivalTime;
 	LocalTime endTime;
 	LocalTime duration;
@@ -28,4 +27,9 @@ public class Destination {
 	}
 
 	public Destination(){}
+
+	public Object clone() throws CloneNotSupportedException{
+		return super.clone();
+	}
+
 }
