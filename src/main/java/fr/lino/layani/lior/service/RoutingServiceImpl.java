@@ -3,13 +3,11 @@ package fr.lino.layani.lior.service;
 import java.io.IOException;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import com.graphhopper.jsprit.core.problem.job.Job;
-import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivities;
+import com.graphhopper.jsprit.core.problem.solution.route.activity.*;
 import fr.lino.layani.lior.model.DistanceDurationMatrices;
 import fr.lino.layani.lior.repository.DoctorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.graphhopper.jsprit.core.problem.job.Service;
 import com.graphhopper.jsprit.core.problem.solution.VehicleRoutingProblemSolution;
 import com.graphhopper.jsprit.core.problem.solution.route.VehicleRoute;
-import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivity;
 import com.graphhopper.jsprit.core.util.Coordinate;
 
 import fr.lino.layani.lior.dto.RoutingDto;
@@ -59,7 +56,7 @@ public class RoutingServiceImpl implements RoutingService {
 	 * @throws InterruptedException Exception
 	 */
 	@Override
-	public RoutingDto getVrptw(List<Integer> ids) throws IOException, InterruptedException {
+	public RoutingDto getVrptw(List<Integer> ids) throws IOException, InterruptedException, CloneNotSupportedException {
 
 //		 --------------- Define Coordinate of user ------------------------------------
 
@@ -75,6 +72,7 @@ public class RoutingServiceImpl implements RoutingService {
 		VehicleRoutingProblemSolution bestSolution = vrptwService.getVehicleRoutingProblemSolution(destinations, waitingTime, startingDestination, earliestStart, latestArrival, MAX_DESTINATIONS_PER_DAY, distanceDurationMatrices);
 
 		String encodedPolyline = getEncodedPolyline(bestSolution);
+		//String encodedPolyline = "toto";
 
 		return generatingRoutingDto(bestSolution, encodedPolyline);
 
@@ -88,7 +86,7 @@ public class RoutingServiceImpl implements RoutingService {
 	 * @throws InterruptedException Exception
 	 */
 	@Override
-	public RoutingDto getVrptwAll() throws IOException, InterruptedException {
+	public RoutingDto getVrptwAll() throws IOException, InterruptedException, CloneNotSupportedException {
 		List<Doctor> doctors = doctorRepository.findAll();
 
 		List<Integer> ids = doctors.stream()
@@ -121,7 +119,7 @@ public class RoutingServiceImpl implements RoutingService {
 		return destinations;
 	}
 
-	private RoutingDto generatingRoutingDto(VehicleRoutingProblemSolution bestSolution, String encodedPolyline) {
+	private RoutingDto generatingRoutingDto(VehicleRoutingProblemSolution bestSolution, String encodedPolyline) throws CloneNotSupportedException {
 		RoutingDto routingDto = new RoutingDto();
 
 		routingDto.setStartingDestination(startingDestination);
@@ -132,26 +130,34 @@ public class RoutingServiceImpl implements RoutingService {
 		return routingDto;
 	}
 
-	private List<Destination> getDestinationVisited(VehicleRoutingProblemSolution bestSolution) {
+	private List<Destination> getDestinationVisited(VehicleRoutingProblemSolution bestSolution) throws CloneNotSupportedException {
 		List<Destination> destinations = new ArrayList<>();
 
 		VehicleRoute bestRoute = bestSolution.getRoutes().stream().findFirst().orElseThrow();
 		TourActivities tour = bestRoute.getTourActivities();
 		List<TourActivity> activities = tour.getActivities();
-		Collection<Job> jobs = tour.getJobs();
-		Service[] services = jobs.toArray(new Service[bestSolution.getRoutes().toArray(new VehicleRoute[bestSolution.getRoutes().size()])[0].getTourActivities().getJobs().size()]);
-		TourActivity[] tourActivities = activities.toArray(new TourActivity[bestSolution.getRoutes().toArray(new VehicleRoute[bestSolution.getRoutes().size()])[0].getTourActivities().getActivities().size()]);
 
+		Start start = bestRoute.getStart();
+		Destination startDestination = (Destination) startingDestination.clone();
+		startDestination.setDuration(LocalTime.ofSecondOfDay((long)start.getOperationTime()));
+		startDestination.setArrivalTime(LocalTime.ofSecondOfDay((long)start.getArrTime()));
+		startDestination.setEndTime(LocalTime.ofSecondOfDay((long)start.getEndTime()));
+		destinations.add(startDestination);
 
-		for (int i = 0; i < services.length; i++) {
-			Destination destination = (Destination) services[i].getUserData();
-			TourActivity tourActivity = tourActivities[i];
-			destination.setArrivalTime(LocalTime.ofSecondOfDay((long) tourActivity.getArrTime()));
-			destination.setEndTime(LocalTime.ofSecondOfDay((long) tourActivity.getEndTime()));
-			destination.setDuration(LocalTime.ofSecondOfDay((long) tourActivity.getOperationTime()));
-			destination.setIndex(i + 1);
+		for (TourActivity act : activities) {
+			PickupService pickupService = (PickupService) act;
+			Destination destination = (Destination) pickupService.getJob().getUserData();
+			destination.setArrivalTime(LocalTime.ofSecondOfDay((long) pickupService.getArrTime()));
+			destination.setEndTime(LocalTime.ofSecondOfDay((long) pickupService.getEndTime()));
+			destination.setDuration(LocalTime.ofSecondOfDay((long) pickupService.getOperationTime()));
 			destinations.add(destination);
 		}
+		End end = bestRoute.getEnd();
+		Destination endingDestination = (Destination) startingDestination.clone();
+		endingDestination.setDuration(LocalTime.ofSecondOfDay((long)end.getOperationTime()));
+		endingDestination.setArrivalTime(LocalTime.ofSecondOfDay((long)end.getArrTime()));
+		endingDestination.setEndTime(LocalTime.ofSecondOfDay((long)end.getEndTime()));
+		destinations.add(endingDestination);
 
 		return destinations;
 	}
@@ -164,13 +170,8 @@ public class RoutingServiceImpl implements RoutingService {
 				.collect(Collectors.toList());
 	}
 
-	private String getEncodedPolyline(VehicleRoutingProblemSolution bestSolution) throws IOException, InterruptedException {
-
-		// adding the starting destination at the beginning and the end of the tour.
+	private String getEncodedPolyline(VehicleRoutingProblemSolution bestSolution) throws IOException, InterruptedException, CloneNotSupportedException {
 		ArrayList<Destination> destinations = (ArrayList<Destination>) getDestinationVisited(bestSolution);
-		destinations.add(0, startingDestination);
-		destinations.add(startingDestination);
-
 		return osrmProjectService.getEncodedPolyline(destinations);
 	}
 }

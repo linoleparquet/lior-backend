@@ -7,7 +7,7 @@ import fr.lino.layani.lior.dto.RoutingDto;
 
 public interface RoutingService {
 
-	RoutingDto getVrptw(List<Integer> ids) throws IOException, InterruptedException;
+	RoutingDto getVrptw(List<Integer> ids) throws IOException, InterruptedException, CloneNotSupportedException;
 
-    RoutingDto getVrptwAll() throws IOException, InterruptedException;
+    RoutingDto getVrptwAll() throws IOException, InterruptedException, CloneNotSupportedException;
 }
