@@ -53,6 +53,26 @@ public class LoadDatabase {
 			establishment3.setY(44.829942);
 			establishmentRepository.save(establishment3);
 
+			Establishment establishment4 = new Establishment();
+			establishment4.setId(4);
+			establishment4.setDepartment("75, Paris, Île-de-France");
+			establishment4.setName("Hôpital Saint-Joseph");
+			establishment4.setAddress("185 Rue Raymond Losserand");
+			establishment4.setCity("Paris");
+			establishment4.setX(2.310073);
+			establishment4.setY(48.829796);
+			establishmentRepository.save(establishment4);
+
+			Establishment establishment5 = new Establishment();
+			establishment5.setId(5);
+			establishment5.setDepartment("47, Lot-et-Garonne, Nouvelle-Aquitaine");
+			establishment5.setName("Centre Hospitalier Agen-Nérac (site d’Agen)");
+			establishment5.setAddress("80 Allées d’Albret");
+			establishment5.setCity("Nérac");
+			establishment5.setX(0.336615);
+			establishment5.setY(44.135947);
+			establishmentRepository.save(establishment5);
+
 			// Initialize doctors
 			Doctor doctor1 = new Doctor();
 			doctor1.setName("Faritet");
@@ -75,6 +95,20 @@ public class LoadDatabase {
 			doctor3.setPeriodicity(6);
 			doctorRepository.save(doctor3);
 
+			Doctor doctor4 = new Doctor();
+			doctor4.setName("Matignon");
+			doctor4.setSurname("Sylvie");
+			doctor4.setEstablishment(establishment4);
+			doctor4.setPeriodicity(6);
+			doctorRepository.save(doctor4);
+
+			Doctor doctor5 = new Doctor();
+			doctor5.setName("Levy");
+			doctor5.setSurname("Thomas");
+			doctor5.setEstablishment(establishment5);
+			doctor5.setPeriodicity(4);
+			doctorRepository.save(doctor5);
+
 			// Initialize Visits
 			Visit visit11 = new Visit();
 			visit11.setDate(LocalDate.now().minusDays(2));
@@ -93,6 +127,17 @@ public class LoadDatabase {
 			visit31.setDoctor(doctor3);
 			visit31.setNotes("Her husband is called Jerôme. And he likes wine.");
 			visitRepository.save(visit31);
+
+			Visit visit41 = new Visit();
+			visit41.setDate(LocalDate.now().minusMonths(10));
+			visit41.setDoctor(doctor4);
+			visit41.setNotes("His colleague Franck Bergniolles is interested by our services. His number: 06 XX XX XX XX");
+			visitRepository.save(visit41);
+
+			Visit visit51 = new Visit();
+			visit51.setDate(LocalDate.now().minusMonths(4));
+			visit51.setDoctor(doctor5);
+			visitRepository.save(visit51);
 
 		};
 	}
