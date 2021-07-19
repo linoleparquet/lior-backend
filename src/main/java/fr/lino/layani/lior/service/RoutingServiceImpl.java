@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import com.graphhopper.jsprit.core.problem.solution.route.activity.*;
-import fr.lino.layani.lior.model.DistanceDurationMatrices;
+import fr.lino.layani.lior.model.*;
 import fr.lino.layani.lior.repository.DoctorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -18,9 +18,6 @@ import com.graphhopper.jsprit.core.problem.solution.route.VehicleRoute;
 import com.graphhopper.jsprit.core.util.Coordinate;
 
 import fr.lino.layani.lior.dto.RoutingDto;
-import fr.lino.layani.lior.model.Destination;
-import fr.lino.layani.lior.model.Doctor;
-import fr.lino.layani.lior.model.Establishment;
 
 @org.springframework.stereotype.Service
 public class RoutingServiceImpl implements RoutingService {
@@ -39,13 +36,8 @@ public class RoutingServiceImpl implements RoutingService {
 	@Autowired
 	DoctorRepository doctorRepository;
 
-	final String EARLIEST_START = "09:00";
-	final String LATEST_ARRIVAL = "18:00";
-	final String WAITING_TIME = "00:30";
-	final int MAX_DESTINATIONS_PER_DAY = 200;
-
-	Coordinate coordinate = new Coordinate(1.388738, 43.643089);
-	Destination startingDestination = new Destination("Address", "startingDestination", coordinate, "0");
+	@Autowired
+	UserPreferenceService userPreferenceService;
 
 	/**
 	 * Solve the Vehicle Routing Problem with Time Constraint (VRPTW)
@@ -58,23 +50,30 @@ public class RoutingServiceImpl implements RoutingService {
 	@Override
 	public RoutingDto getVrptw(List<Integer> ids) throws IOException, InterruptedException, CloneNotSupportedException {
 
-//		 --------------- Define Coordinate of user ------------------------------------
+		UserPreference userPreference = userPreferenceService.getDefaultUserPreference();
 
-		final LocalTime waitingTime = LocalTime.parse(WAITING_TIME);
-		final LocalTime earliestStart = LocalTime.parse(EARLIEST_START);
-		final LocalTime latestArrival = LocalTime.parse(LATEST_ARRIVAL);
+		final LocalTime earliestStart = userPreference.getEarliestStart();
+		final LocalTime latestArrival = userPreference.getLatestArrival();
+		final LocalTime waitingTime = userPreference.getWaitingTime();
+		final int maxDestinationPerDay = userPreference.getMaxDestinationPerDay();
+
+		final UserLocation userLocation = userPreference.getUserLocation();
+		Coordinate coordinate = new Coordinate(userLocation.getX(), userLocation.getY());
+		Destination startingDestination = new Destination(userLocation.getName(), "startingDestination", coordinate, "0");
+
+//		 --------------- Define Coordinate of user ------------------------------------
 
 		// The 'destinations' variable helps creating the distance matrix and the duration matrix.
 		List<Destination> destinations = retrieveDestinations(ids, startingDestination);
 		// Retrieve distance and duration matrix from OSRM Project
 		DistanceDurationMatrices distanceDurationMatrices = osrmProjectService.getDistanceDurationMatrices(destinations);
 		// Adding the startingDestination as the first step and the last step of our route
-		VehicleRoutingProblemSolution bestSolution = vrptwService.getVehicleRoutingProblemSolution(destinations, waitingTime, startingDestination, earliestStart, latestArrival, MAX_DESTINATIONS_PER_DAY, distanceDurationMatrices);
+		VehicleRoutingProblemSolution bestSolution = vrptwService.getVehicleRoutingProblemSolution(destinations, waitingTime, startingDestination, earliestStart, latestArrival, maxDestinationPerDay, distanceDurationMatrices);
 
-		String encodedPolyline = getEncodedPolyline(bestSolution);
+		String encodedPolyline = getEncodedPolyline(bestSolution, startingDestination);
 		//String encodedPolyline = "toto";
 
-		return generatingRoutingDto(bestSolution, encodedPolyline);
+		return generatingRoutingDto(bestSolution, startingDestination, encodedPolyline);
 
 	}
 
@@ -119,18 +118,18 @@ public class RoutingServiceImpl implements RoutingService {
 		return destinations;
 	}
 
-	private RoutingDto generatingRoutingDto(VehicleRoutingProblemSolution bestSolution, String encodedPolyline) throws CloneNotSupportedException {
+	private RoutingDto generatingRoutingDto(VehicleRoutingProblemSolution bestSolution, Destination startingDestination, String encodedPolyline) throws CloneNotSupportedException {
 		RoutingDto routingDto = new RoutingDto();
 
 		routingDto.setStartingDestination(startingDestination);
-		routingDto.setDestinations(getDestinationVisited(bestSolution));
+		routingDto.setDestinations(getDestinationVisited(bestSolution, startingDestination));
 		routingDto.setDestinationsNotVisited(getDestinationNotVisited(bestSolution));
 		routingDto.setEncodedPolyline(encodedPolyline);
 
 		return routingDto;
 	}
 
-	private List<Destination> getDestinationVisited(VehicleRoutingProblemSolution bestSolution) throws CloneNotSupportedException {
+	private List<Destination> getDestinationVisited(VehicleRoutingProblemSolution bestSolution, Destination startingDestination) throws CloneNotSupportedException {
 		List<Destination> destinations = new ArrayList<>();
 
 		VehicleRoute bestRoute = bestSolution.getRoutes().stream().findFirst().orElseThrow();
@@ -170,8 +169,8 @@ public class RoutingServiceImpl implements RoutingService {
 				.collect(Collectors.toList());
 	}
 
-	private String getEncodedPolyline(VehicleRoutingProblemSolution bestSolution) throws IOException, InterruptedException, CloneNotSupportedException {
-		ArrayList<Destination> destinations = (ArrayList<Destination>) getDestinationVisited(bestSolution);
+	private String getEncodedPolyline(VehicleRoutingProblemSolution bestSolution, Destination startingDestination) throws IOException, InterruptedException, CloneNotSupportedException {
+		ArrayList<Destination> destinations = (ArrayList<Destination>) getDestinationVisited(bestSolution, startingDestination);
 		return osrmProjectService.getEncodedPolyline(destinations);
 	}
 }
