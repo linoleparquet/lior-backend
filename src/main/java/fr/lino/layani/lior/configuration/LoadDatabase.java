@@ -1,9 +1,8 @@
 package fr.lino.layani.lior.configuration;
 
-import fr.lino.layani.lior.model.Doctor;
-import fr.lino.layani.lior.model.Establishment;
-import fr.lino.layani.lior.model.Visit;
+import fr.lino.layani.lior.model.*;
 import fr.lino.layani.lior.repository.EstablishmentRepository;
+import fr.lino.layani.lior.repository.UserPreferenceRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,16 +12,17 @@ import fr.lino.layani.lior.repository.VisitRepository;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Configuration
 @Slf4j
 public class LoadDatabase {
 
 	@Bean
-	CommandLineRunner initDatabase(DoctorRepository doctorRepository, VisitRepository visitRepository, EstablishmentRepository establishmentRepository) {
+	CommandLineRunner initDatabase(DoctorRepository doctorRepository, VisitRepository visitRepository, EstablishmentRepository establishmentRepository, UserPreferenceRepository userPreferenceRepository) {
 		return args -> {
 
-			// Initialise establishments
+			// ------------------------ Initialise establishments ------------------------
 			Establishment establishment1 = new Establishment();
 			establishment1.setId(1);
 			establishment1.setDepartment("31, Haute-Garonne, Occitanie");
@@ -73,7 +73,7 @@ public class LoadDatabase {
 			establishment5.setY(44.135947);
 			establishmentRepository.save(establishment5);
 
-			// Initialize doctors
+			// ------------------------ Initialize doctors ------------------------
 			Doctor doctor1 = new Doctor();
 			doctor1.setName("Faritet");
 			doctor1.setSurname("Jean");
@@ -109,7 +109,7 @@ public class LoadDatabase {
 			doctor5.setPeriodicity(4);
 			doctorRepository.save(doctor5);
 
-			// Initialize Visits
+			// ------------------------ Initialize Visits ------------------------
 			Visit visit11 = new Visit();
 			visit11.setDate(LocalDate.now().minusDays(2));
 			visit11.setDoctor(doctor1);
@@ -138,6 +138,25 @@ public class LoadDatabase {
 			visit51.setDate(LocalDate.now().minusMonths(4));
 			visit51.setDoctor(doctor5);
 			visitRepository.save(visit51);
+
+			// ------------------------ Initialize User Preference ------------------------
+
+			UserLocation userLocation = new UserLocation();
+			userLocation.setId(1);
+			userLocation.setName("Place du Capitole");
+			userLocation.setX(1.440694);
+			userLocation.setY(43.603902);
+
+			UserPreference userPreference = new UserPreference();
+			userPreference.setId(1);
+			userPreference.setName("default");
+			userPreference.setUserLocation(userLocation);
+			userPreference.setEarliestStart(LocalTime.parse("09:00"));
+			userPreference.setLatestArrival(LocalTime.parse("18:00"));
+			userPreference.setWaitingTime(LocalTime.parse("00:30"));
+			userPreference.setMaxDestinationPerDay(200);
+
+			userPreferenceRepository.save(userPreference);
 
 		};
 	}
