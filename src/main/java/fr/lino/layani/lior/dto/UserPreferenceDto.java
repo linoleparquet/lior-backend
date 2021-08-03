@@ -10,7 +10,7 @@ public class UserPreferenceDto {
     private String latestArrival;
     private String waitingTime;
     private int maxDestinationPerDay;
-    private String LocationName;
+    private String locationName;
     private double x;
     private double y;
 
