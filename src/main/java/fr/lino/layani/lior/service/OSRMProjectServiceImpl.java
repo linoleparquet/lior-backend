@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import fr.lino.layani.lior.model.Destination;
 import fr.lino.layani.lior.model.DistanceDurationMatrices;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -48,7 +49,12 @@ public class OSRMProjectServiceImpl implements OSRMProjectService {
         HttpClient httpClient = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        return response.body();
+        if (response.statusCode() < 400) {
+            return response.body();
+        }
+        else {
+            throw new InterruptedException("OSRM Service is down. Tried to access it through this request: " + url);
+        }
     }
 
     private String requestRouteJson(List<Destination> destinations) throws IOException, InterruptedException {
@@ -57,7 +63,12 @@ public class OSRMProjectServiceImpl implements OSRMProjectService {
         HttpClient httpClient = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        return response.body();
+        if (response.statusCode() < 400) {
+            return response.body();
+        }
+        else {
+            throw new InterruptedException("OSRM Service is down. Tried to access it through this request: " + url);
+        }
     }
 
     private String constructTableUrl(List<Destination> destinations) {
