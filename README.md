@@ -11,6 +11,13 @@ The OSRM Project
 You can directly build the docker image by using:
 `docker build -t lior-backend .`
 
+## Release a version
+New version are released from the master branch.
+First create a tag on the local branch. Only tags starting by 'v' will trigger the release of a docker image. Example: `git tag 'v1.0.1'`
+Then push the local tag to the remote branch. Example: `git push origin v1.0.1`
+The docker image will be available for pulling. `docker pull ghcr.io/linoleparquet/lior-frontend:v1.0.1`
+
+
 ## TO DO:
 - horaires d'ouverture de l'établissmeent par établissment
 -demi journée de presence par docteur (faire une énum)
