@@ -1,6 +1,7 @@
 ## Presentation
 
 This project is the backend part of the [lior project](https://github.com/linoleparquet/lior). It's a Spring Boot application.
+It exposes the port `8080`
 
 ### Technical aspects
 
