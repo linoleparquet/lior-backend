@@ -33,7 +33,7 @@ Postgres is the default choice.
 - Run with a H2 instance
 - Launch the applicatoin with the `h2` spring profile: `java -Dspring.profiles.active=h2 lino.layani.lior.LiorApplication`
   You can set the Spring profile in IntelliJ throught Edit Configurations... > Modify options > Add VM options
-  Or Docker option: `docker run --rm lior-backend java -jar -Dspring.profiles.active=h2 app.jar`
+  Or Docker option: `docker run -p8080:8080--rm lior-backend java -jar -Dspring.profiles.active=h2 app.jar`
 
 ## TO DO:
 
